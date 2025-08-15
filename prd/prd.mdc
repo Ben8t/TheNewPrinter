@@ -1,0 +1,903 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# New Printer - Product Requirements Document
+
+## 1. Product Overview
+
+### Vision
+Create a lightweight CLI tool with optional web interface that transforms web articles into beautifully formatted PDFs using pandoc's robust document conversion pipeline - bringing the classic magazine aesthetic to digital content.
+
+### Core Philosophy
+- **Simple**: Leverage pandoc's proven document processing
+- **Reliable**: Use LaTeX for professional typography and layout
+- **Fast**: Minimal dependencies, maximum performance
+- **Flexible**: Easy to extend and customize
+
+## 2. Architecture Overview
+
+### 2.1 Simplified Tech Stack
+
+```bash
+# Core Stack
+├── Content Extraction: Trafilatura (Primary) + Mercury Parser (Fallback)
+├── Document Processing: Pandoc + Custom LaTeX Template
+├── CLI Interface: Python Click
+└── Optional Web UI: FastAPI server
+```
+
+### 2.2 Processing Pipeline
+
+```mermaid
+graph LR
+    A[URL Input] --> B[Extract Content]
+    B --> C[Convert to Markdown]
+    C --> D[Apply Pandoc Filters]
+    D --> E[Generate PDF via LaTeX]
+    E --> F[Output PDF]
+    
+    B --> B1[Trafilatura Extractor]
+    D --> D1[Columns Filter]
+    D --> D2[Image Processing]
+    E --> E1[Custom LaTeX Template]
+```
+
+## 3. Technical Implementation
+
+### 3.1 Project Structure
+
+```
+new-printer/
+├── new_printer/
+│   ├── __init__.py
+│   ├── cli.py                       # Main CLI entry point
+│   ├── extractors/
+│   │   ├── __init__.py
+│   │   ├── trafilatura_extractor.py # Primary extractor
+│   │   └── readability_fallback.py  # Fallback extractor
+│   ├── processors/
+│   │   ├── __init__.py
+│   │   ├── markdown_converter.py    # HTML to Markdown
+│   │   ├── image_processor.py       # Image optimization
+│   │   └── pandoc_runner.py         # Pandoc execution wrapper
+│   └── templates/
+│       ├── article.latex            # Custom LaTeX template
+│       ├── magazine.latex           # New Yorker-style template
+│       ├── columns.lua              # Pandoc columns filter
+│       └── config.yaml              # Default configurations
+├── web_ui/                          # Optional web interface
+│   ├── __init__.py
+│   ├── server.py                    # FastAPI server
+│   ├── static/
+│   └── templates/
+├── tests/
+├── setup.py
+├── requirements.txt
+├── pyproject.toml
+└── README.md
+```
+
+### 3.2 Core Dependencies
+
+```toml
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "new-printer"
+version = "1.0.0"
+description = "Transform web articles into print-ready PDFs with classic magazine styling"
+authors = [{name = "Your Name", email = "your@email.com"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "click>=8.1.0",
+    "trafilatura>=1.6.0",
+    "requests>=2.31.0",
+    "markdownify>=0.11.6",
+    "Pillow>=10.0.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "jinja2>=3.1.0",
+    "readability-lxml>=0.8.1",
+]
+
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "python-multipart>=0.0.6",
+    "jinja2>=3.1.0"
+]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0"
+]
+
+[project.scripts]
+new-printer = "new_printer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/new-printer"
+Repository = "https://github.com/yourusername/new-printer.git"
+```
+
+### 3.3 CLI Interface Design
+
+```bash
+# One-off run (no install)
+uvx new-printer https://example.com/article
+
+# With options
+uvx new-printer https://example.com/article \
+  --columns 2 \
+  --font-size 11pt \
+  --output article.pdf \
+  --template academic
+
+# Batch processing
+uvx new-printer --batch urls.txt --output-dir ./pdfs
+
+# Start web interface
+uvx new-printer serve --port 3000
+
+# Optional: install the CLI with uv and run
+uv tool install new-printer
+new-printer --help
+```
+
+### 3.4 Custom LaTeX Template
+
+```latex
+% article.latex - Custom Pandoc LaTeX Template
+\documentclass[11pt,a4paper]{article}
+
+% Multi-column support
+\usepackage{multicol}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+% Custom variables from Pandoc
+\geometry{
+  margin=2cm,
+  top=2.5cm,
+  bottom=2.5cm
+}
+
+% Configure multicol
+\setlength{\columnsep}{1cm}
+\setlength{\columnseprule}{0.5pt}
+
+% Title formatting
+\title{$title$}
+$if(author)$\author{$author$}$endif$
+$if(date)$\date{$date$}$endif$
+
+% Custom headers
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{$title$}
+\fancyhead[R]{\thepage}
+
+\begin{document}
+
+% Title spans full width
+$if(title)$
+\maketitle
+$endif$
+
+% Begin two-column layout for content
+\begin{multicols}{$columns$}
+
+$body$
+
+\end{multicols}
+
+\end{document}
+```
+
+### 3.5 Core CLI Implementation
+
+```python
+# new_printer/cli.py
+import sys
+import click
+
+from new_printer.extractors.trafilatura_extractor import TrafilaturaExtractor
+from new_printer.processors.pandoc_runner import PandocRunner
+
+
+@click.group(help="Convert web articles to print-ready PDFs")
+def main() -> None:
+    pass
+
+
+@main.command("convert")
+@click.argument("url")
+@click.option("-o", "--output", type=click.Path(dir_okay=False), help="Output PDF filename")
+@click.option("-c", "--columns", type=click.IntRange(1, 3), default=2, show_default=True)
+@click.option("-s", "--font-size", "font_size", type=str, default="11pt", show_default=True)
+@click.option("-t", "--template", type=str, default="article", show_default=True)
+@click.option("--no-images", "include_images", is_flag=True, flag_value=False, default=True)
+def convert_cmd(url: str, output: str | None, columns: int, font_size: str, template: str, include_images: bool) -> None:
+    """Convert a single URL to PDF."""
+    extractor = TrafilaturaExtractor()
+    article = extractor.extract(url)
+
+    runner = PandocRunner()
+    pdf_path = runner.convert_to_pdf(
+        article,
+        {
+            "output": output or f"{article.title[:50].replace(' ', '_')}.pdf",
+            "columns": columns,
+            "font_size": font_size,
+            "template": template,
+            "include_images": include_images,
+        },
+    )
+    click.echo(f"PDF generated: {pdf_path}")
+
+
+@main.command("serve")
+@click.option("-p", "--port", type=int, default=3000, show_default=True)
+def serve_cmd(port: int) -> None:
+    """Start the optional web interface."""
+    try:
+        from new_printer.web_ui.server import create_app
+        import uvicorn
+    except Exception as exc:  # pragma: no cover
+        click.echo(f"Web UI dependencies missing or failed to import: {exc}", err=True)
+        sys.exit(1)
+
+    uvicorn.run(create_app(), host="0.0.0.0", port=port, log_level="info")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### 3.6 Pandoc Processing Module
+
+```python
+# new_printer/processors/pandoc_runner.py
+
+import subprocess
+import tempfile
+import shutil
+from pathlib import Path
+from typing import Dict, Any, Optional
+import yaml
+import os
+
+from ..models import Article
+from ..config import Config
+
+class PandocRunner:
+    """Handles PDF generation using Pandoc with LaTeX backend."""
+    
+    def __init__(self):
+        self.config = Config()
+        self.templates_dir = Path(__file__).parent.parent / 'templates'
+        
+    def convert_to_pdf(self, article: Article, options: Dict[str, Any]) -> str:
+        """Convert article to PDF using Pandoc."""
+        
+        output = options.get('output', 'article.pdf')
+        columns = options.get('columns', 2)
+        font_size = options.get('font_size', '11pt')
+        template = options.get('template', 'article')
+        include_images = options.get('include_images', True)
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            
+            # Create markdown file with metadata
+            markdown_content = self._create_markdown_with_metadata(
+                article, columns, font_size
+            )
+            
+            markdown_file = temp_path / 'article.md'
+            with open(markdown_file, 'w', encoding='utf-8') as f:
+                f.write(markdown_content)
+            
+            # Handle images if requested
+            if include_images and article.images:
+                self._process_images(article.images, temp_path)
+            
+            # Build pandoc command
+            pandoc_args = self._build_pandoc_args(
+                markdown_file, output, template, temp_path, include_images
+            )
+            
+            # Execute pandoc
+            try:
+                result = subprocess.run(
+                    pandoc_args, 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=120  # 2 minute timeout
+                )
+                
+                if result.returncode != 0:
+                    raise Exception(f"Pandoc failed: {result.stderr}")
+                
+                return str(Path(output).resolve())
+                
+            except subprocess.TimeoutExpired:
+                raise Exception("PDF generation timed out")
+            except FileNotFoundError:
+                raise Exception("Pandoc not found. Please install Pandoc.")
+    
+    def _create_markdown_with_metadata(
+        self, article: Article, columns: int, font_size: str
+    ) -> str:
+        """Create markdown content with YAML frontmatter."""
+        
+        metadata = {
+            'title': article.title,
+            'author': article.author or '',
+            'date': article.date.isoformat() if article.date else '',
+            'columns': columns,
+            'fontsize': font_size,
+            'geometry': 'margin=2cm',
+            'documentclass': 'article',
+            'header-includes': [
+                '\\usepackage{multicol}',
+                '\\usepackage{graphicx}',
+                '\\usepackage{float}',
+                '\\setlength{\\columnsep}{1cm}',
+                '\\setlength{\\columnseprule}{0.5pt}'
+            ]
+        }
+        
+        # Convert metadata to YAML frontmatter
+        yaml_metadata = yaml.dump(metadata, default_flow_style=False)
+        
+        # Combine metadata and content
+        return f"---\n{yaml_metadata}---\n\n{article.content}"
+    
+    def _process_images(self, images: list, temp_dir: Path):
+        """Download and process images for inclusion in PDF."""
+        import requests
+        from PIL import Image
+        
+        images_dir = temp_dir / 'images'
+        images_dir.mkdir(exist_ok=True)
+        
+        for i, image_url in enumerate(images):
+            try:
+                # Download image
+                response = requests.get(image_url, timeout=10)
+                response.raise_for_status()
+                
+                # Determine file extension
+                content_type = response.headers.get('content-type', '')
+                if 'jpeg' in content_type or 'jpg' in content_type:
+                    ext = '.jpg'
+                elif 'png' in content_type:
+                    ext = '.png'
+                elif 'gif' in content_type:
+                    ext = '.gif'
+                else:
+                    ext = '.jpg'  # default
+                
+                image_path = images_dir / f'image_{i}{ext}'
+                
+                with open(image_path, 'wb') as f:
+                    f.write(response.content)
+                
+                # Optimize image for print
+                self._optimize_image_for_print(image_path)
+                
+            except Exception as e:
+                print(f"Warning: Failed to process image {image_url}: {e}")
+    
+    def _optimize_image_for_print(self, image_path: Path):
+        """Optimize image for print quality and size."""
+        try:
+            from PIL import Image
+            
+            with Image.open(image_path) as img:
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Resize if too large (max width for 2-column: ~3 inches at 300 DPI)
+                max_width = 900  # pixels
+                if img.width > max_width:
+                    ratio = max_width / img.width
+                    new_height = int(img.height * ratio)
+                    img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+                
+                # Save optimized version
+                img.save(image_path, optimize=True, quality=85)
+                
+        except ImportError:
+            # Pillow not available, skip optimization
+            pass
+        except Exception as e:
+            print(f"Warning: Failed to optimize image {image_path}: {e}")
+    
+    def _build_pandoc_args(
+        self, 
+        markdown_file: Path, 
+        output: str, 
+        template: str, 
+        temp_dir: Path,
+        include_images: bool
+    ) -> list:
+        """Build pandoc command line arguments."""
+        
+        args = [
+            'pandoc',
+            str(markdown_file),
+            '--from', 'markdown',
+            '--to', 'pdf',
+            '--pdf-engine', 'xelatex',
+            '--output', output
+        ]
+        
+        # Add template if exists
+        template_path = self.templates_dir / f'{template}.latex'
+        if template_path.exists():
+            args.extend(['--template', str(template_path)])
+        
+        # Add columns filter if exists
+        columns_filter = self.templates_dir / 'columns.lua'
+        if columns_filter.exists():
+            args.extend(['--lua-filter', str(columns_filter)])
+        
+        # Handle images
+        if include_images:
+            args.extend(['--extract-media', str(temp_dir)])
+        
+        # Additional options for better PDF generation
+        args.extend([
+            '--variable', 'geometry:margin=2cm',
+            '--variable', 'fontfamily:times',
+            '--variable', 'linkcolor:blue',
+            '--standalone'
+        ])
+        
+        return args
+
+# Supporting classes
+
+class Article:
+    """Article data model."""
+    
+    def __init__(self, title: str, content: str, author: str = None, 
+                 date = None, images: list = None):
+        self.title = title
+        self.content = content
+        self.author = author
+        self.date = date
+        self.images = images or []
+```
+
+## 4. Installation & Setup
+
+### 4.1 System Requirements
+
+```bash
+# Required system dependencies
+- Python 3.8+
+- Pandoc 3.0+
+- LaTeX distribution (TeX Live recommended)
+- (Optional) ImageMagick for advanced image processing
+
+# Python packages (automatically installed)
+- click (CLI framework)
+- trafilatura (content extraction)  
+- requests (HTTP client)
+- rich (CLI formatting)
+- Pillow (image processing)
+```
+
+### 4.2 Installation Scripts
+
+```bash
+# install.sh - System setup script
+#!/bin/bash
+set -euo pipefail
+
+echo "Installing New Printer CLI prerequisites..."
+
+# Check for pandoc
+if ! command -v pandoc >/dev/null 2>&1; then
+  echo "Installing Pandoc..."
+  if [[ "${OSTYPE:-}" == darwin* ]]; then
+    brew install pandoc
+  elif [[ -f /etc/debian_version ]]; then
+    sudo apt-get update
+    sudo apt-get install -y pandoc texlive-latex-recommended texlive-latex-extra
+  else
+    echo "Please install Pandoc manually: https://pandoc.org/installing.html"
+    exit 1
+  fi
+fi
+
+# Check for LaTeX engine
+if ! command -v xelatex >/dev/null 2>&1; then
+  echo "Please install a LaTeX distribution (TeX Live recommended)."
+fi
+
+# Ensure uv is installed
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Installing uv..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+fi
+
+# Install the CLI as a uv-managed tool
+uv tool install new-printer
+
+echo "Installation complete! Try: uvx new-printer --help"
+```
+
+### 4.3 Configuration File
+
+```yaml
+# ~/.new-printer.yml - User configuration
+default:
+  columns: 2
+  font_size: "11pt"
+  template: "article"
+  output_dir: "~/Downloads"
+  include_images: true
+
+templates:
+  article:
+    description: "Clean article layout"
+    margins: "2cm"
+  academic:
+    description: "Academic paper style"
+    margins: "2.5cm"
+    font_size: "12pt"
+  magazine:
+    description: "Magazine-style layout"
+    columns: 3
+    margins: "1.5cm"
+
+extractors:
+  primary: "mercury"
+  fallback: "trafilatura"
+  timeout: 30
+```
+
+## 5. Optional Web Interface
+
+### 5.1 Simple FastAPI Server
+
+```python
+# web_ui/server.py - Minimal web interface
+from fastapi import FastAPI, Form, HTTPException
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import tempfile
+from pathlib import Path
+
+from new_printer.extractors.trafilatura_extractor import TrafilaturaExtractor
+from new_printer.processors.pandoc_runner import PandocRunner
+from new_printer.processors.markdown_converter import MarkdownConverter
+
+def create_app():
+    app = FastAPI(title="New Printer", description="Transform web articles into print-ready PDFs")
+    
+    # Serve static files
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    
+    @app.get("/", response_class=HTMLResponse)
+    async def main_interface():
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>New Printer</title>
+            <style>
+                body { 
+                    font-family: 'Georgia', serif; 
+                    max-width: 600px; 
+                    margin: 50px auto; 
+                    padding: 20px;
+                    line-height: 1.6;
+                }
+                h1 { 
+                    font-size: 2.5em; 
+                    color: #333; 
+                    text-align: center;
+                    margin-bottom: 0.5em;
+                }
+                .subtitle {
+                    text-align: center;
+                    color: #666;
+                    font-style: italic;
+                    margin-bottom: 2em;
+                }
+                .form { margin: 20px 0; }
+                input[type="url"] { 
+                    width: 100%; 
+                    padding: 12px; 
+                    margin: 10px 0;
+                    border: 2px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 16px;
+                }
+                button { 
+                    background: #2c3e50; 
+                    color: white; 
+                    padding: 12px 24px; 
+                    border: none; 
+                    border-radius: 4px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    width: 100%;
+                    margin-top: 10px;
+                }
+                button:hover { background: #34495e; }
+                .options { 
+                    margin: 20px 0; 
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 15px;
+                }
+                select, input[type="number"] { 
+                    padding: 8px; 
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }
+                .option-group {
+                    display: flex;
+                    flex-direction: column;
+                }
+                label {
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    color: #555;
+                }
+                #status {
+                    margin-top: 20px;
+                    padding: 15px;
+                    border-radius: 4px;
+                    text-align: center;
+                }
+                .processing { background: #f8f9fa; border: 1px solid #dee2e6; }
+                .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+                .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+            </style>
+        </head>
+        <body>
+            <h1>📰 New Printer</h1>
+            <p class="subtitle">Transform web articles into classic print-ready PDFs</p>
+            
+            <form id="convertForm">
+                <div class="form">
+                    <label>Article URL:</label>
+                    <input type="url" id="url" required placeholder="https://example.com/article">
+                </div>
+                
+                <div class="options">
+                    <div class="option-group">
+                        <label>Layout:</label>
+                        <select id="columns">
+                            <option value="1">Single Column</option>
+                            <option value="2" selected>Two Column</option>
+                            <option value="3">Three Column</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Font Size:</label>
+                        <select id="fontSize">
+                            <option value="10pt">10pt (Small)</option>
+                            <option value="11pt" selected>11pt (Normal)</option>
+                            <option value="12pt">12pt (Large)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Style:</label>
+                        <select id="template">
+                            <option value="article">Clean Article</option>
+                            <option value="magazine" selected>Magazine Style</option>
+                            <option value="academic">Academic</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit">Generate PDF</button>
+            </form>
+            
+            <div id="status"></div>
+            
+            <script>
+                document.getElementById('convertForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const status = document.getElementById('status');
+                    status.className = 'processing';
+                    status.innerHTML = '⏳ Processing article...';
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('url', document.getElementById('url').value);
+                        formData.append('columns', document.getElementById('columns').value);
+                        formData.append('font_size', document.getElementById('fontSize').value);
+                        formData.append('template', document.getElementById('template').value);
+                        
+                        const response = await fetch('/convert', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'article.pdf';
+                            a.click();
+                            status.className = 'success';
+                            status.innerHTML = '✅ PDF Downloaded Successfully!';
+                        } else {
+                            const error = await response.text();
+                            status.className = 'error';
+                            status.innerHTML = '❌ Error: ' + error;
+                        }
+                    } catch (error) {
+                        status.className = 'error';
+                        status.innerHTML = '❌ Error: ' + error.message;
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        """
+    
+    @app.post("/convert")
+    async def convert_article(
+        url: str = Form(...),
+        columns: int = Form(2),
+        font_size: str = Form("11pt"),
+        template: str = Form("magazine")
+    ):
+        try:
+            # Extract article
+            extractor = TrafilaturaExtractor()
+            article = extractor.extract(url)
+            
+            # Convert to markdown
+            converter = MarkdownConverter()
+            markdown_content = converter.convert(article)
+            
+            # Generate PDF
+            runner = PandocRunner()
+            
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                pdf_path = runner.convert_to_pdf(article, {
+                    'output': tmp_file.name,
+                    'columns': columns,
+                    'font_size': font_size,
+                    'template': template,
+                    'include_images': True
+                })
+                
+                return FileResponse(
+                    pdf_path,
+                    media_type='application/pdf',
+                    filename=f"{article.title[:50]}.pdf"
+                )
+                
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    return app
+```
+
+## 6. Implementation Timeline
+
+### Phase 1: Core CLI (Week 1)
+- [ ] Basic project structure
+- [ ] Trafilatura integration (primary extractor)
+- [ ] Simple pandoc wrapper
+- [ ] Basic LaTeX template
+- [ ] CLI interface with Python Click
+
+### Phase 2: Enhanced Processing (Week 2)  
+- [ ] Custom columns Lua filter integration
+- [ ] Image optimization
+- [ ] Multiple template support
+- [ ] Configuration file support
+- [ ] Error handling and logging
+
+### Phase 3: Polish & Web UI (Week 3)
+- [ ] Batch processing
+- [ ] Simple web interface
+- [ ] Installation scripts  
+- [ ] Documentation
+- [ ] Publish with uv (uv tool) and optional pip/conda
+
+## 7. Key Advantages of Pandoc Approach
+
+### 7.1 Reliability
+- **Proven Technology**: Pandoc is battle-tested for document conversion
+- **LaTeX Backend**: Superior typography and layout handling
+- **Native Multi-column**: Dedicated columns filter available
+- **Image Handling**: LaTeX handles image placement intelligently
+
+### 7.2 Simplicity
+- **Minimal Dependencies**: No browser engines or complex JavaScript
+- **Standard Tools**: Leverages existing document processing ecosystem
+- **Easy Extension**: Lua filters for custom processing
+- **Cross-platform**: Works consistently across operating systems
+
+### 7.3 Performance  
+- **Fast Processing**: No browser overhead
+- **Small Footprint**: Minimal memory usage
+- **Batch Friendly**: Easy to process multiple articles
+- **Scriptable**: Perfect for automation workflows
+
+### 7.4 Quality Output
+- **Professional Typography**: LaTeX-quality typesetting
+- **Consistent Layout**: Reliable multi-column formatting
+- **Image Integration**: Smart image placement and sizing
+- **Print Optimization**: Designed for paper output
+
+## 8. Usage Examples
+
+```bash
+# One-off conversion (no install)
+uvx new-printer https://longform.aeon.co/essays/the-future-of-work
+
+# Custom formatting
+uvx new-printer https://example.com/article \
+  --columns 3 \
+  --font-size 10pt \
+  --template magazine \
+  --output magazine-style.pdf
+
+# Batch processing from file
+echo "https://site1.com/article1" >> urls.txt
+echo "https://site2.com/article2" >> urls.txt
+uvx new-printer --batch urls.txt --output-dir ./articles
+
+# Web interface
+uvx new-printer serve --port 8080
+```
+
+## 9. Distribution Strategy
+
+### 9.1 Package Managers
+```bash
+# uv (primary)
+# Install uv (once)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Run without installing
+uvx new-printer --help
+
+# Or install as a tool
+uv tool install new-printer
+
+# Optional: pip
+python -m pip install new-printer
+
+# Optional: conda
+conda install -c conda-forge new-printer
+```

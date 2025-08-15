@@ -1,0 +1,50 @@
+# New Printer - Default Configuration File
+# Copy this file to ~/.new-printer.yml or ~/.config/new-printer/config.yml
+# and modify values as needed.
+
+# Default options for document conversion
+default:
+  columns: 2 # Number of columns (1-3)
+  font_size: "11pt" # Font size (10pt, 11pt, 12pt, etc.)
+  template: "article" # Default template (article, magazine, academic)
+  output_dir: "~/Downloads" # Default output directory
+  include_images: true # Whether to include images in PDFs
+  timeout: 120 # Timeout for PDF generation (seconds)
+
+# Template configurations
+templates:
+  article:
+    description: "Clean article layout"
+    margins: "2cm"
+    fontfamily: "times"
+
+  academic:
+    description: "Academic paper style"
+    margins: "2.5cm"
+    font_size: "12pt"
+    fontfamily: "times"
+
+  magazine:
+    description: "Magazine-style layout"
+    columns: 3
+    margins: "1.5cm"
+    fontfamily: "times"
+
+# Content extraction settings
+extractors:
+  primary: "trafilatura" # Primary extractor (trafilatura)
+  fallback: "readability" # Fallback extractor (readability)
+  timeout: 30 # Timeout for content extraction (seconds)
+  user_agent: "new-printer/1.0.0" # User agent for web requests
+
+# Pandoc PDF generation settings
+pandoc:
+  pdf_engine: "xelatex" # PDF engine (xelatex, pdflatex, lualatex)
+  standalone: true # Generate standalone document
+  extract_media: true # Extract and process images
+
+# Web interface settings (optional)
+web:
+  host: "0.0.0.0" # Host to bind web server
+  port: 3000 # Default port for web interface
+  debug: false # Enable debug mode

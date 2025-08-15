@@ -1,0 +1,231 @@
+% magazine.latex - Magazine Style Template for New Printer
+% New Yorker inspired layout with elegant typography
+\documentclass[$if(fontsize)$$fontsize$,$endif$$if(lang)$$babel-lang$,$endif$$if(papersize)$$papersize$paper,$endif$$for(classoption)$$classoption$$sep$,$endfor$]{article}
+
+% Advanced typography
+$if(fontfamily)$
+\usepackage[$for(fontfamilyoptions)$$fontfamilyoptions$$sep$,$endfor$]{$fontfamily$}
+$else$
+\usepackage{times}
+$endif$
+\usepackage{microtype} % Improved typography
+\usepackage{setspace}
+\setstretch{1.1} % Slightly increased line spacing for readability
+
+% Page geometry - tighter margins for magazine feel
+\usepackage[margin=$if(geometry)$$geometry$$else$1.5cm$endif$,top=2cm,bottom=2cm]{geometry}
+
+% Multi-column support with refined settings
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{needspace}  % For \needspace command
+
+% Colors and sophisticated link styling
+\usepackage{xcolor}
+\definecolor{magazineblue}{RGB}{0,51,102}
+\definecolor{magazinegray}{RGB}{64,64,64}
+
+% Column separation for magazine layout (moved after xcolor)
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.3pt}
+% \setlength{\columnseprulecolor}{\color{gray}}  % This causes issues, using default color
+
+% Graphics with magazine-style image handling
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\columnwidth\columnwidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>0.8\textheight 0.8\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+% Colors and sophisticated link styling
+$if(colorlinks)$
+\usepackage[unicode=true,colorlinks=true,linkcolor=$if(linkcolor)$$linkcolor$$else$magazineblue$endif$,urlcolor=$if(urlcolor)$$urlcolor$$else$magazineblue$endif$,citecolor=$if(citecolor)$$citecolor$$else$magazineblue$endif$]{hyperref}
+$else$
+\usepackage[unicode=true,hidelinks]{hyperref}
+$endif$
+
+% Sophisticated headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+$if(header-left)$
+\fancyhead[L]{\small\textsc{$header-left$}}
+$endif$
+\fancyhead[C]{\small\textsc{New Printer}}
+$if(header-right)$
+\fancyhead[R]{\small $header-right$}
+$endif$
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.2pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Language support
+$if(lang)$
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[shorthands=off,$for(babel-otherlangs)$$babel-otherlangs$,$endfor$main=$babel-lang$]{babel}
+$if(babel-newcommands)$
+  $babel-newcommands$
+$endif$
+\else
+  \usepackage{polyglossia}
+  $if(polyglossia-lang.name)$
+  \setmainlanguage[$polyglossia-lang.options$]{$polyglossia-lang.name$}
+  $else$
+  \setmainlanguage{english}
+  $endif$
+$for(polyglossia-otherlangs)$
+  \setotherlanguage[$polyglossia-otherlangs.options$]{$polyglossia-otherlangs.name$}
+$endfor$
+\fi
+$else$
+% Default to English when no language is specified
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[english]{babel}
+\else
+  \usepackage{polyglossia}
+  \setmainlanguage{english}
+\fi
+$endif$
+
+% Enhanced math support
+$if(math)$
+\usepackage{amsmath,amssymb,amsfonts}
+$endif$
+
+% Code highlighting with magazine aesthetics
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% Magazine-style list formatting
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*,label=\textbullet,itemsep=1pt,parsep=0pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=*,itemsep=1pt,parsep=0pt,topsep=3pt}
+
+% Drop caps for magazine feel (disabled for compatibility)
+% \usepackage{lettrine}
+% \setlength{\DefaultNindent}{0pt}
+% \setlength{\DefaultSlope}{0pt}
+
+% Paragraph formatting - magazine style
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt plus 1pt minus 1pt}
+
+% Sophisticated table formatting
+$if(tables)$
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+\usepackage{caption}
+\captionsetup[table]{skip=6pt}
+$endif$
+
+% Quote environment - magazine style
+\usepackage{csquotes}
+\renewenvironment{quote}
+  {\small\begin{quotation}\itshape\color{magazinegray}}
+  {\end{quotation}}
+
+% Pull quote environment for magazine articles
+\newenvironment{pullquote}
+  {\begin{center}\large\itshape\color{magazineblue}"}
+  {"\end{center}}
+
+% Title formatting - magazine style
+$if(title)$
+\title{\Huge\textbf{$title$}}
+$endif$
+$if(author)$
+\author{\large\textsc{$for(author)$$author$$sep$ \and $endfor$}}
+$endif$
+$if(date)$
+\date{\large $date$}
+$endif$
+
+% Section formatting (disabled for compatibility)
+% \usepackage{titlesec}
+% \titleformat{\section}
+%   {\large\bfseries\color{magazineblue}}
+%   {\thesection}{1em}{}
+% \titleformat{\subsection}
+%   {\normalsize\bfseries\color{magazinegray}}
+%   {\thesubsection}{1em}{}
+
+% Custom commands
+\newcommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% Define pandocbounded command for image handling
+\newcommand{\pandocbounded}[1]{#1}
+
+% Byline command for magazine articles
+\newcommand{\byline}[1]{\vspace{0.5em}\noindent\textsc{\small #1}\vspace{1em}}
+
+% Additional header includes
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\begin{document}
+
+% Magazine-style title layout
+$if(title)$
+\begin{center}
+{\Huge\textbf{$title$}}
+
+$if(author)$
+\vspace{0.5em}
+{\large\textsc{$for(author)$$author$$sep$ \and $endfor$}}
+$endif$
+
+$if(date)$
+\vspace{0.3em}
+{\normalsize $date$}
+$endif$
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+$endif$
+
+% Begin multi-column layout - default to 3 columns for magazine
+$if(columns)$
+\begin{multicols}{$columns$}
+$else$
+\begin{multicols}{3}
+$endif$
+
+% Drop cap for first paragraph (if content starts with text)
+% This would need to be handled in post-processing or content preparation
+
+% Abstract or description as magazine introduction
+$if(abstract)$
+\textit{$abstract$}
+\vspace{1em}
+$endif$
+
+% Table of contents - magazine style
+$if(toc)$
+{
+$if(colorlinks)$
+\hypersetup{linkcolor=$if(toccolor)$$toccolor$$else$magazineblue$endif$}
+$endif$
+\setcounter{tocdepth}{$toc-depth$}
+\tableofcontents
+\vspace{1em}
+}
+$endif$
+
+% Main content
+$body$
+
+% End multi-column layout
+$if(columns)$
+\end{multicols}
+$else$
+\end{multicols}
+$endif$
+
+\end{document} 

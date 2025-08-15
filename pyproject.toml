@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "new-printer"
+version = "1.0.0"
+description = "Transform web articles into print-ready PDFs with classic magazine styling"
+authors = [{name = "Your Name", email = "your@email.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "click>=8.1.0",
+    "trafilatura>=1.6.0",
+    "requests>=2.31.0",
+    "markdownify>=0.11.6",
+    "Pillow>=9.0.0",  # Lower version for Python 3.8 compatibility
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "jinja2>=3.1.0",
+    "readability-lxml>=0.8.1",
+]
+
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.100.0",  # Slightly lower for better compatibility
+    "uvicorn>=0.20.0",   # Slightly lower for better compatibility
+    "python-multipart>=0.0.6",
+]
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",     # Lower version for Python 3.8
+    "flake8>=4.0.0,<6.0.0",  # Use version compatible with Python 3.8
+    "mypy>=1.0.0,<1.5.0",    # Use version compatible with Python 3.8
+]
+
+[project.scripts]
+new-printer = "new_printer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/new-printer"
+Repository = "https://github.com/yourusername/new-printer.git"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["new_printer*"]
+exclude = ["tests*", "prd*", "tasks*"] 

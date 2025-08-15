@@ -1,0 +1,185 @@
+% article.latex - Clean Article Template for New Printer
+% Professional typography with clean, readable layout
+\documentclass[$if(fontsize)$$fontsize$,$endif$$if(lang)$$babel-lang$,$endif$$if(papersize)$$papersize$paper,$endif$$for(classoption)$$classoption$$sep$,$endfor$]{article}
+
+% Font and typography
+$if(fontfamily)$
+\usepackage[$for(fontfamilyoptions)$$fontfamilyoptions$$sep$,$endfor$]{$fontfamily$}
+$else$
+\usepackage{times}
+$endif$
+$if(linestretch)$
+\usepackage{setspace}
+\setstretch{$linestretch$}
+$endif$
+
+% Page geometry
+\usepackage[margin=$if(geometry)$$geometry$$else$2cm$endif$]{geometry}
+
+% Multi-column support
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{needspace}  % For \needspace command
+
+% Graphics and images
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+% Colors and links
+$if(colorlinks)$
+\usepackage[unicode=true,colorlinks=true,linkcolor=$if(linkcolor)$$linkcolor$$else$blue$endif$,urlcolor=$if(urlcolor)$$urlcolor$$else$blue$endif$,citecolor=$if(citecolor)$$citecolor$$else$blue$endif$]{hyperref}
+$else$
+\usepackage[unicode=true,hidelinks]{hyperref}
+$endif$
+
+% Headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+$if(header-left)$
+\fancyhead[L]{\small\textit{$header-left$}}
+$endif$
+$if(header-right)$
+\fancyhead[R]{\small $header-right$}
+$endif$
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Language and encoding
+$if(lang)$
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[shorthands=off,$for(babel-otherlangs)$$babel-otherlangs$,$endfor$main=$babel-lang$]{babel}
+$if(babel-newcommands)$
+  $babel-newcommands$
+$endif$
+\else
+  \usepackage{polyglossia}
+  $if(polyglossia-lang.name)$
+  \setmainlanguage[$polyglossia-lang.options$]{$polyglossia-lang.name$}
+  $else$
+  \setmainlanguage{english}
+  $endif$
+$for(polyglossia-otherlangs)$
+  \setotherlanguage[$polyglossia-otherlangs.options$]{$polyglossia-otherlangs.name$}
+$endfor$
+\fi
+$else$
+% Default to English when no language is specified
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[english]{babel}
+\else
+  \usepackage{polyglossia}
+  \setmainlanguage{english}
+\fi
+$endif$
+
+% Math support
+$if(math)$
+\usepackage{amsmath,amssymb,amsfonts}
+$endif$
+
+% Code highlighting
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% Lists and spacing
+\usepackage{enumitem}
+\setlist{nosep} % Reduce spacing in lists
+
+% Paragraph formatting
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+
+% Table formatting
+$if(tables)$
+\usepackage{longtable,booktabs}
+$endif$
+
+% Custom commands for spacing
+\newcommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% Define pandocbounded command for image handling
+\newcommand{\pandocbounded}[1]{#1}
+
+% Quote environment
+\usepackage{csquotes}
+\renewenvironment{quote}
+  {\small\begin{quotation}\itshape}
+  {\end{quotation}}
+
+% Title formatting
+$if(title)$
+\title{\Large\textbf{$title$}}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \and $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$endif$
+
+% Multi-column settings
+$if(columns)$
+\setlength{\columnsep}{1cm}
+\setlength{\columnseprule}{0pt}
+$endif$
+
+% Additional header includes
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\begin{document}
+
+% Title page
+$if(title)$
+\maketitle
+$if(columns)$
+% Add some space before starting columns if multi-column
+\vspace{0.5cm}
+$endif$
+$endif$
+
+% Begin multi-column layout if specified
+$if(columns)$
+\begin{multicols}{$columns$}
+$endif$
+
+% Abstract or description
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+% Table of contents
+$if(toc)$
+{
+$if(colorlinks)$
+\hypersetup{linkcolor=$if(toccolor)$$toccolor$$else$black$endif$}
+$endif$
+\setcounter{tocdepth}{$toc-depth$}
+\tableofcontents
+}
+$endif$
+
+% Main content
+$body$
+
+% End multi-column layout if specified
+$if(columns)$
+\end{multicols}
+$endif$
+
+\end{document} 

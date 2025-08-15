@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Transform Articles to PDFs</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom styles -->
+    <style>
+        .prose-custom {
+            color: #374151;
+            line-height: 1.75;
+        }
+        
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+        }
+        
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+        }
+        
+        .form-input {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+        }
+        
+        .form-select {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white;
+        }
+        
+        .card {
+            @apply bg-white rounded-xl shadow-lg p-6;
+        }
+        
+        .progress-bar {
+            @apply w-full bg-gray-200 rounded-full h-2.5;
+        }
+        
+        .progress-fill {
+            @apply bg-blue-600 h-2.5 rounded-full transition-all duration-300;
+        }
+        
+        .spinner {
+            @apply animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tab-active {
+            @apply border-blue-500 text-blue-600;
+        }
+        
+        .tab-inactive {
+            @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="text-2xl">📰</div>
+                    <h1 class="text-2xl font-bold text-gray-900">New Printer</h1>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Transform web articles into print-ready PDFs
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <nav class="flex space-x-8">
+                <button onclick="switchTab('single')" id="tab-single" 
+                        class="py-2 px-1 border-b-2 font-medium text-sm tab-active">
+                    Single Article
+                </button>
+                <button onclick="switchTab('batch')" id="tab-batch"
+                        class="py-2 px-1 border-b-2 font-medium text-sm tab-inactive">
+                    Batch Processing
+                </button>
+                <button onclick="switchTab('about')" id="tab-about"
+                        class="py-2 px-1 border-b-2 font-medium text-sm tab-inactive">
+                    About
+                </button>
+            </nav>
+        </div>
+
+        <!-- Single Article Tab -->
+        <div id="content-single" class="tab-content">
+            <div class="grid lg:grid-cols-3 gap-8">
+                
+                <!-- Conversion Form -->
+                <div class="lg:col-span-2">
+                    <div class="card">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-6">Convert Article to PDF</h2>
+                        
+                        <form id="conversionForm" class="space-y-6">
+                            <!-- URL Input -->
+                            <div>
+                                <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Article URL
+                                </label>
+                                <input type="url" id="url" name="url" required
+                                       placeholder="https://example.com/article"
+                                       class="form-input">
+                                <p class="mt-1 text-sm text-gray-500">
+                                    Enter the URL of the article you want to convert
+                                </p>
+                            </div>
+                            
+                            <!-- Options Grid -->
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="columns" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Layout
+                                    </label>
+                                    <select id="columns" name="columns" class="form-select">
+                                        <option value="1">Single Column</option>
+                                        <option value="2" selected>Two Columns</option>
+                                        <option value="3">Three Columns</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="font_size" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Font Size
+                                    </label>
+                                    <select id="font_size" name="font_size" class="form-select">
+                                        <option value="9pt">9pt (Small)</option>
+                                        <option value="10pt">10pt</option>
+                                        <option value="11pt" selected>11pt (Normal)</option>
+                                        <option value="12pt">12pt</option>
+                                        <option value="14pt">14pt (Large)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="template" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Style
+                                    </label>
+                                    <select id="template" name="template" class="form-select">
+                                        <option value="article">Clean Article</option>
+                                        <option value="magazine" selected>Magazine Style</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced Options -->
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="margins" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Margins
+                                    </label>
+                                    <select id="margins" name="margins" class="form-select">
+                                        <option value="1.5cm">Narrow (1.5cm)</option>
+                                        <option value="2cm" selected>Normal (2cm)</option>
+                                        <option value="2.5cm">Wide (2.5cm)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="font_family" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Font Family
+                                    </label>
+                                    <select id="font_family" name="font_family" class="form-select">
+                                        <option value="times" selected>Times New Roman</option>
+                                        <option value="helvetica">Helvetica</option>
+                                        <option value="palatino">Palatino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Include Images -->
+                            <div class="flex items-center">
+                                <input type="checkbox" id="include_images" name="include_images" checked
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="include_images" class="ml-2 block text-sm text-gray-700">
+                                    Include images in PDF
+                                </label>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div>
+                                <button type="submit" id="convertBtn" class="btn-primary w-full">
+                                    <span id="convertBtnText">Generate PDF</span>
+                                    <div id="convertBtnSpinner" class="spinner hidden inline-block ml-2"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Status and Results -->
+                <div class="lg:col-span-1">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Conversion Status</h3>
+                        
+                        <div id="statusCard" class="hidden">
+                            <div class="mb-4">
+                                <div class="progress-bar">
+                                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <p id="statusMessage" class="text-sm text-gray-600 mt-2">Ready to convert</p>
+                            </div>
+                            
+                            <div id="resultCard" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <h4 class="font-medium text-green-800 mb-2">Conversion Complete!</h4>
+                                <div id="resultDetails" class="text-sm text-green-700 space-y-1">
+                                    <!-- Results will be populated here -->
+                                </div>
+                                <button id="downloadBtn" class="btn-primary mt-3 w-full">
+                                    Download PDF
+                                </button>
+                            </div>
+                            
+                            <div id="errorCard" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <h4 class="font-medium text-red-800 mb-2">Conversion Failed</h4>
+                                <p id="errorMessage" class="text-sm text-red-700"></p>
+                                <button onclick="resetForm()" class="btn-secondary mt-3 w-full">
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="idleMessage" class="text-center text-gray-500">
+                            <div class="text-4xl mb-2">📄</div>
+                            <p class="text-sm">Enter an article URL to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Batch Processing Tab -->
+        <div id="content-batch" class="tab-content hidden">
+            <div class="card max-w-4xl mx-auto">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Batch Process Multiple Articles</h2>
+                
+                <form id="batchForm" class="space-y-6">
+                    <!-- File Upload -->
+                    <div>
+                        <label for="urls_file" class="block text-sm font-medium text-gray-700 mb-2">
+                            Upload URLs File
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="urls_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input id="urls_file" name="urls_file" type="file" accept=".txt,.csv" class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">TXT or CSV files with one URL per line</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Batch Options -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="batch_template" class="block text-sm font-medium text-gray-700 mb-2">
+                                Template
+                            </label>
+                            <select id="batch_template" name="template" class="form-select">
+                                <option value="article">Clean Article</option>
+                                <option value="magazine" selected>Magazine Style</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="batch_columns" class="block text-sm font-medium text-gray-700 mb-2">
+                                Columns
+                            </label>
+                            <select id="batch_columns" name="columns" class="form-select">
+                                <option value="1">Single Column</option>
+                                <option value="2" selected>Two Columns</option>
+                                <option value="3">Three Columns</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" id="batchBtn" class="btn-primary w-full">
+                        <span id="batchBtnText">Process Batch</span>
+                        <div id="batchBtnSpinner" class="spinner hidden inline-block ml-2"></div>
+                    </button>
+                </form>
+                
+                <!-- Batch Status -->
+                <div id="batchStatus" class="hidden mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="font-medium text-blue-800 mb-2">Batch Processing Status</h3>
+                    <div class="mb-3">
+                        <div class="progress-bar">
+                            <div id="batchProgressFill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <p id="batchStatusMessage" class="text-sm text-blue-700 mb-2"></p>
+                    <div id="batchStats" class="text-xs text-blue-600 grid grid-cols-3 gap-2">
+                        <div>Total: <span id="batchTotal">0</span></div>
+                        <div>Completed: <span id="batchCompleted">0</span></div>
+                        <div>Failed: <span id="batchFailed">0</span></div>
+                    </div>
+                    
+                    <button id="batchDownloadBtn" class="btn-primary w-full mt-4 hidden">
+                        Download Results (ZIP)
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- About Tab -->
+        <div id="content-about" class="tab-content hidden">
+            <div class="card max-w-4xl mx-auto prose-custom">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">About New Printer</h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">What is New Printer?</h3>
+                        <p class="text-gray-600 mb-4">
+                            New Printer transforms web articles into beautifully formatted PDFs with classic magazine styling. 
+                            Using advanced content extraction and professional typesetting, it creates print-ready documents 
+                            that are perfect for reading offline or archiving.
+                        </p>
+                        
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Features</h3>
+                        <ul class="text-gray-600 space-y-2">
+                            <li>• Clean content extraction from any website</li>
+                            <li>• Professional LaTeX-based PDF generation</li>
+                            <li>• Multiple layout options (1-3 columns)</li>
+                            <li>• Magazine and article style templates</li>
+                            <li>• Image optimization for print quality</li>
+                            <li>• Batch processing for multiple articles</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">How it Works</h3>
+                        <div class="space-y-3 text-gray-600">
+                            <div class="flex items-start space-x-3">
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">1</span>
+                                <p>Extract clean content from the webpage using advanced algorithms</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">2</span>
+                                <p>Convert HTML to clean Markdown with proper formatting</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">3</span>
+                                <p>Process and optimize images for print quality</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">4</span>
+                                <p>Generate professional PDF using LaTeX typesetting</p>
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3 mt-6">Technology</h3>
+                        <p class="text-gray-600">
+                            Built with Python, FastAPI, and Pandoc. Uses Trafilatura for content extraction 
+                            and XeLaTeX for professional typography. The result is publication-quality PDFs 
+                            that rival traditional magazine layouts.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        let currentConversionId = null;
+        let currentBatchId = null;
+        let statusCheckInterval = null;
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            
+            // Update tab styles
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.className = tab.className.replace('tab-active', 'tab-inactive');
+            });
+            
+            document.getElementById(`tab-${tabName}`).className = 
+                document.getElementById(`tab-${tabName}`).className.replace('tab-inactive', 'tab-active');
+        }
+        
+        // Single article conversion
+        document.getElementById('conversionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            // Update UI
+            showConversionStatus();
+            setConversionLoading(true);
+            updateProgress(0, 'Starting conversion...');
+            
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showConversionResult(result);
+                } else {
+                    showConversionError(result.detail || 'Conversion failed');
+                }
+            } catch (error) {
+                showConversionError('Network error: ' + error.message);
+            } finally {
+                setConversionLoading(false);
+            }
+        });
+        
+        // Batch processing
+        document.getElementById('batchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            // Update UI
+            showBatchStatus();
+            setBatchLoading(true);
+            updateBatchProgress(0, 'Starting batch processing...');
+            
+            try {
+                const response = await fetch('/api/batch-convert', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentBatchId = result.batch_id;
+                    updateBatchStats(0, result.total_urls, 0);
+                    startBatchStatusPolling();
+                } else {
+                    showBatchError(result.detail || 'Batch processing failed');
+                }
+            } catch (error) {
+                showBatchError('Network error: ' + error.message);
+            } finally {
+                setBatchLoading(false);
+            }
+        });
+        
+        // File upload handling
+        document.getElementById('urls_file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(1) + ' KB';
+                console.log(`Selected file: ${fileName} (${fileSize})`);
+            }
+        });
+        
+        // Drag and drop
+        const dropZone = document.querySelector('.border-dashed');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-400', 'bg-blue-50');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('urls_file').files = files;
+            }
+        });
+        
+        // UI Helper Functions
+        function showConversionStatus() {
+            document.getElementById('statusCard').classList.remove('hidden');
+            document.getElementById('idleMessage').classList.add('hidden');
+            document.getElementById('resultCard').classList.add('hidden');
+            document.getElementById('errorCard').classList.add('hidden');
+        }
+        
+        function setConversionLoading(loading) {
+            const btn = document.getElementById('convertBtn');
+            const text = document.getElementById('convertBtnText');
+            const spinner = document.getElementById('convertBtnSpinner');
+            
+            btn.disabled = loading;
+            if (loading) {
+                text.textContent = 'Converting...';
+                spinner.classList.remove('hidden');
+            } else {
+                text.textContent = 'Generate PDF';
+                spinner.classList.add('hidden');
+            }
+        }
+        
+        function updateProgress(percent, message) {
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('statusMessage').textContent = message;
+        }
+        
+        function showConversionResult(result) {
+            updateProgress(100, 'Conversion complete!');
+            
+            const resultCard = document.getElementById('resultCard');
+            const resultDetails = document.getElementById('resultDetails');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            resultDetails.innerHTML = `
+                <div><strong>Title:</strong> ${result.article_title}</div>
+                <div><strong>Word Count:</strong> ${result.word_count?.toLocaleString() || 'Unknown'}</div>
+                <div><strong>Processing Time:</strong> ${result.processing_time?.toFixed(1) || '?'}s</div>
+            `;
+            
+            downloadBtn.onclick = () => {
+                window.open(result.download_url, '_blank');
+            };
+            
+            resultCard.classList.remove('hidden');
+        }
+        
+        function showConversionError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorCard').classList.remove('hidden');
+        }
+        
+        function resetForm() {
+            document.getElementById('statusCard').classList.add('hidden');
+            document.getElementById('idleMessage').classList.remove('hidden');
+            updateProgress(0, 'Ready to convert');
+        }
+        
+        // Batch processing functions
+        function showBatchStatus() {
+            document.getElementById('batchStatus').classList.remove('hidden');
+        }
+        
+        function setBatchLoading(loading) {
+            const btn = document.getElementById('batchBtn');
+            const text = document.getElementById('batchBtnText');
+            const spinner = document.getElementById('batchBtnSpinner');
+            
+            btn.disabled = loading;
+            if (loading) {
+                text.textContent = 'Processing...';
+                spinner.classList.remove('hidden');
+            } else {
+                text.textContent = 'Process Batch';
+                spinner.classList.add('hidden');
+            }
+        }
+        
+        function updateBatchProgress(percent, message) {
+            document.getElementById('batchProgressFill').style.width = `${percent}%`;
+            document.getElementById('batchStatusMessage').textContent = message;
+        }
+        
+        function updateBatchStats(completed, total, failed) {
+            document.getElementById('batchCompleted').textContent = completed;
+            document.getElementById('batchTotal').textContent = total;
+            document.getElementById('batchFailed').textContent = failed;
+        }
+        
+        function startBatchStatusPolling() {
+            statusCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/batch-status/${currentBatchId}`);
+                    const status = await response.json();
+                    
+                    updateBatchProgress(status.progress, status.message);
+                    updateBatchStats(status.completed, status.total, status.failed);
+                    
+                    if (status.status === 'completed' || status.status === 'failed') {
+                        clearInterval(statusCheckInterval);
+                        
+                        if (status.download_url) {
+                            const downloadBtn = document.getElementById('batchDownloadBtn');
+                            downloadBtn.classList.remove('hidden');
+                            downloadBtn.onclick = () => {
+                                window.open(status.download_url, '_blank');
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking batch status:', error);
+                }
+            }, 2000);
+        }
+        
+        function showBatchError(message) {
+            updateBatchProgress(0, `Error: ${message}`);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if templates are available
+            fetch('/api/templates')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Available templates:', data.templates);
+                })
+                .catch(error => {
+                    console.warn('Could not load templates:', error);
+                });
+        });
+    </script>
+</body>
+</html> 
