@@ -1,4 +1,4 @@
-# 📰 New Printer
+# 📰 The New Printer
 
 Transform web articles into beautifully formatted PDFs with classic magazine styling.
 
@@ -270,4 +270,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**New Printer** - Because sometimes the best way to read online is offline. 📰✨ 
+**The New Printer** - Because sometimes the best way to read online is offline. 📰✨ 
