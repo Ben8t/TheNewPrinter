@@ -27,6 +27,7 @@ class Article:
     description: Optional[str] = None
     language: Optional[str] = None
     word_count: Optional[int] = None
+    metadata: dict = field(default_factory=dict)
     
     def __post_init__(self):
         """Post-initialization processing."""

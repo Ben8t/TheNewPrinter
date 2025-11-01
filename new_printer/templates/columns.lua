@@ -18,24 +18,11 @@ function wrap_in_multicols(content, col_count)
 end
 
 -- Handle images in multi-column layout
+-- Don't modify images at all - let Pandoc handle them naturally
+-- The template's graphicx settings will handle column width
 function Image(img)
-  if is_multicolumn() then
-    -- For multi-column layouts, ensure images fit within column width
-    local latex_code = '\\includegraphics[width=\\columnwidth,keepaspectratio]{' .. img.src .. '}'
-    
-    -- Add caption if present
-    if img.caption and #img.caption > 0 then
-      latex_code = '\\begin{figure}[H]\n\\centering\n' .. latex_code .. 
-                   '\n\\caption{' .. pandoc.utils.stringify(img.caption) .. '}\n\\end{figure}'
-    else
-      latex_code = '\\begin{center}\n' .. latex_code .. '\n\\end{center}'
-    end
-    
-    return pandoc.RawInline('latex', latex_code)
-  else
-    -- For single column, use standard image handling
-    return img
-  end
+  -- Return image unchanged for both single and multi-column
+  return img
 end
 
 -- Handle tables in multi-column layout
@@ -107,9 +94,8 @@ end
 -- Optimize paragraph breaks for columns
 function Para(para)
   if is_multicolumn() then
-    -- Add slight spacing optimization for narrow columns
-    local content = pandoc.write(pandoc.Pandoc({para}), 'latex')
-    -- Remove excessive paragraph spacing that might look bad in columns
+    -- Just return the paragraph as-is
+    -- Images will be handled by the Image function above
     return para
   else
     return para

@@ -49,8 +49,8 @@ class MarkdownConverter(BaseMarkdownConverter):
             (r'\n\s*\n\s*\n+', '\n\n'),
             # Fix heading spacing
             (r'\n(#{1,6})\s*([^\n]+)\n([^\n#])', r'\n\1 \2\n\n\3'),
-            # Fix list spacing
-            (r'\n(\s*)[-*+]\s*([^\n]+)\n([^\n\s-*+])', r'\n\1- \2\n\n\3'),
+            # Fix list spacing (escaped dash at end to avoid range interpretation)
+            (r'\n(\s*)[-*+]\s*([^\n]+)\n([^\n\s*+\-])', r'\n\1- \2\n\n\3'),
             # Clean up bold/italic formatting
             (r'\*\*\s*\*\*', ''),
             (r'\*\s*\*', ''),
@@ -447,37 +447,37 @@ class MarkdownConverter(BaseMarkdownConverter):
         return markdown
     
     # Override specific conversion methods for better control
-    def convert_h1(self, el, text, convert_as_inline):
+    def convert_h1(self, el, text, *args, **kwargs):
         """Convert h1 with proper spacing."""
         return f'\n\n# {text}\n\n'
     
-    def convert_h2(self, el, text, convert_as_inline):
+    def convert_h2(self, el, text, *args, **kwargs):
         """Convert h2 with proper spacing."""
         return f'\n\n## {text}\n\n'
     
-    def convert_h3(self, el, text, convert_as_inline):
+    def convert_h3(self, el, text, *args, **kwargs):
         """Convert h3 with proper spacing."""
         return f'\n\n### {text}\n\n'
     
-    def convert_h4(self, el, text, convert_as_inline):
+    def convert_h4(self, el, text, *args, **kwargs):
         """Convert h4 with proper spacing."""
         return f'\n\n#### {text}\n\n'
     
-    def convert_h5(self, el, text, convert_as_inline):
+    def convert_h5(self, el, text, *args, **kwargs):
         """Convert h5 with proper spacing."""
         return f'\n\n##### {text}\n\n'
     
-    def convert_h6(self, el, text, convert_as_inline):
+    def convert_h6(self, el, text, *args, **kwargs):
         """Convert h6 with proper spacing."""
         return f'\n\n###### {text}\n\n'
     
-    def convert_p(self, el, text, convert_as_inline):
+    def convert_p(self, el, text, *args, **kwargs):
         """Convert paragraphs with proper spacing."""
         if not text.strip():
             return ''
         return f'\n\n{text}\n\n'
     
-    def convert_figcaption(self, el, text, convert_as_inline):
+    def convert_figcaption(self, el, text, *args, **kwargs):
         """Convert figcaption as italic text."""
         if not text.strip():
             return ''

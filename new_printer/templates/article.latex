@@ -21,6 +21,7 @@ $endif$
 \usepackage{float}
 \usepackage{wrapfig}
 \usepackage{needspace}  % For \needspace command
+\usepackage{caption}  % For caption support in non-floating figures
 
 % Graphics and images
 \usepackage{graphicx}
@@ -153,6 +154,21 @@ $endif$
 
 % Begin multi-column layout if specified
 $if(columns)$
+% Disable figure floating in multicols by redefining figure environment
+% This allows images to work properly in multi-column layouts
+\makeatletter
+\let\oldfigure\figure
+\let\endoldfigure\endfigure
+\renewenvironment{figure}[1][]{%
+  \def\@captype{figure}%
+  \par\medskip\noindent
+  \begin{minipage}{\columnwidth}
+  \centering
+}{%
+  \end{minipage}
+  \par\medskip
+}
+\makeatother
 \begin{multicols}{$columns$}
 $endif$
 

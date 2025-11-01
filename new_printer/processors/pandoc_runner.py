@@ -6,6 +6,7 @@ Pandoc with LaTeX backend, custom templates, and advanced formatting options.
 """
 
 import os
+import re
 import subprocess
 import tempfile
 import shutil
@@ -17,6 +18,7 @@ import time
 
 from ..models import Article, ConversionOptions
 from ..config import get_config
+from .markdown_converter import convert_article_to_markdown
 
 
 class PandocRunner:
@@ -73,11 +75,14 @@ class PandocRunner:
             temp_path = Path(temp_dir)
             
             try:
-                # Process images first so we can update the markdown content
+                # Article content is already in Markdown format (from trafilatura_extractor)
+                # No need to convert again
+                
+                # Process images: download them and update URLs to local paths
                 processed_images = []
                 if options.include_images and article.images:
                     processed_images = self._process_article_images(article, temp_path)
-                    # Update article content to reference local images
+                    # Replace remote URLs with local paths in the markdown
                     article = self._update_article_with_local_images(article, processed_images)
                 
                 # Create markdown file with updated content
@@ -323,14 +328,17 @@ class PandocRunner:
     
     def _update_article_with_local_images(self, article: Article, processed_images: List) -> Article:
         """
-        Update the article object to include processed local images.
+        Update the article object to replace remote image URLs with local paths.
+        
+        Preserves the original positions of images in the content by replacing
+        remote URLs with local paths where they already exist in the markdown.
         
         Args:
             article: Article object
             processed_images: List of processed ImageInfo objects
             
         Returns:
-            Updated article object with local image references inserted
+            Updated article object with local image references
         """
         if not processed_images:
             return article
@@ -345,55 +353,155 @@ class PandocRunner:
         if not valid_images:
             return updated_article
         
-        # Prepare image markdown references
-        image_refs = []
+        # Build a mapping from remote URL to local path
+        url_to_local = {}
         for img_info in valid_images:
-            # Create relative path from current working directory
             local_filename = Path(img_info.local_path).name
             local_path = f"tmp_images/{local_filename}"
-            
-            # Create markdown image syntax
-            alt_text = img_info.alt_text or "Article image"
-            caption = img_info.caption or ""
-            
-            if caption and caption != alt_text:
-                # Use figure syntax with caption
-                image_md = f"![{alt_text}]({local_path})\n*{caption}*"
-            else:
-                image_md = f"![{alt_text}]({local_path})"
-            
-            image_refs.append(image_md)
+            url_to_local[img_info.url] = local_path
         
-        # Insert images into the content
+        # Replace remote image URLs with local paths in the content
         content = updated_article.content
-        lines = content.split('\n')
         
-        # Find a good insertion point - after the first few paragraphs or heading
-        insertion_point = 0
-        lines_seen = 0
+        # Pattern to match markdown images: ![alt text](url)
+        # This will match both with and without titles
+        for remote_url, local_path in url_to_local.items():
+            # Escape special regex characters in the URL
+            escaped_url = re.escape(remote_url)
+            
+            # Replace the image URL while preserving alt text
+            # Pattern: ![anything](remote_url) or ![anything](remote_url "title")
+            pattern = rf'!\[([^\]]*)\]\({escaped_url}(?:\s+"[^"]*")?\)'
+            replacement = rf'![\1]({local_path})'
+            content = re.sub(pattern, replacement, content)
         
-        for i, line in enumerate(lines):
-            if line.strip():
-                lines_seen += 1
-                # Insert after 2-3 content lines to put images near the beginning
-                # but after the intro/title
-                if lines_seen >= 3:
-                    insertion_point = i + 1
-                    break
+        # Check if any images were replaced
+        images_replaced = content != updated_article.content
         
-        # If we didn't find a good spot, insert after the title/heading
-        if insertion_point == 0:
-            for i, line in enumerate(lines):
-                if line.strip().startswith('#') or (line.strip() and len(line.strip()) > 20):
-                    insertion_point = i + 1
-                    break
+        # If no images were replaced, insert them using anchor paragraph matching
+        if not images_replaced:
+            # Get image contexts from metadata
+            image_contexts = {}
+            if hasattr(updated_article, 'metadata') and updated_article.metadata:
+                image_contexts = updated_article.metadata.get('image_contexts', {})
+            
+            # Prepare image positioning data
+            image_placements = []
+            for img_info in valid_images:
+                local_filename = Path(img_info.local_path).name
+                local_path = f"tmp_images/{local_filename}"
+                alt_text = img_info.alt_text or "Article image"
+                image_md = f"![{alt_text}]({local_path})"
+                
+                # Get context for this image
+                context = image_contexts.get(img_info.url, {})
+                anchor = context.get('anchor_paragraph', '')
+                position_hint = context.get('position_hint', 999)
+                
+                image_placements.append({
+                    'markdown': image_md,
+                    'anchor': anchor,
+                    'position_hint': position_hint,
+                    'url': img_info.url
+                })
+            
+            # Sort by position hint (original order)
+            image_placements.sort(key=lambda x: x['position_hint'])
+            
+            lines = content.split('\n')
+            content_lower = content.lower()
+            
+            # Try to place each image after its anchor paragraph
+            placed_images = []
+            unplaced_images = []
+            
+            for img_data in image_placements:
+                anchor = img_data['anchor']
+                if not anchor or len(anchor) < 30:
+                    unplaced_images.append(img_data)
+                    continue
+                
+                # Normalize anchor text for flexible matching
+                # Remove extra spaces, normalize punctuation
+                import string
+                anchor_normalized = ' '.join(anchor.lower().split())
+                anchor_words = set(w.strip(string.punctuation) for w in anchor_normalized.split() if len(w) > 3)
+                
+                # Try to find the best matching line
+                best_match_line = -1
+                best_match_score = 0
+                
+                for i, line in enumerate(lines):
+                    line_lower = line.lower().strip()
+                    if not line_lower or len(line_lower) < 20:
+                        continue
+                    
+                    # Normalize line text
+                    line_normalized = ' '.join(line_lower.split())
+                    
+                    # Try multiple matching strategies
+                    score = 0
+                    
+                    # Strategy 1: Substring match (most reliable)
+                    if len(anchor_normalized) > 50:
+                        # Try progressively shorter substrings
+                        for substr_len in [80, 60, 40, 30]:
+                            anchor_substr = anchor_normalized[:substr_len]
+                            if anchor_substr in line_normalized:
+                                score = max(score, substr_len / 10.0 + 10)
+                                break
+                            # Also try from line to anchor
+                            if len(line_normalized) > 30 and line_normalized[:min(50, len(line_normalized))] in anchor_normalized:
+                                score = max(score, 8)
+                    
+                    # Strategy 2: Word overlap
+                    line_words = set(w.strip(string.punctuation) for w in line_normalized.split() if len(w) > 3)
+                    if anchor_words and line_words:
+                        common_words = anchor_words & line_words
+                        if common_words:
+                            overlap_ratio = len(common_words) / min(len(anchor_words), len(line_words))
+                            if overlap_ratio > 0.5:  # At least 50% word overlap
+                                score = max(score, overlap_ratio * 5)
+                    
+                    if score > best_match_score:
+                        best_match_score = score
+                        best_match_line = i
+                
+                # Lower threshold for matching
+                if best_match_line >= 0 and best_match_score > 3.0:
+                    placed_images.append((best_match_line, img_data['markdown']))
+                else:
+                    unplaced_images.append(img_data)
+            
+            # Insert placed images (in reverse order to preserve line numbers)
+            placed_images.sort(key=lambda x: x[0], reverse=True)
+            for line_idx, image_md in placed_images:
+                # Insert after the matched line
+                insert_pos = line_idx + 1
+                # Find next non-empty line to insert before it
+                while insert_pos < len(lines) and not lines[insert_pos].strip():
+                    insert_pos += 1
+                lines.insert(insert_pos, '\n' + image_md + '\n')
+            
+            # Distribute unplaced images evenly
+            if unplaced_images:
+                # Find good insertion points
+                insertion_points = []
+                for i, line in enumerate(lines):
+                    if i > 0 and not line.strip() and i < len(lines) - 1:
+                        if lines[i-1].strip() and lines[i+1].strip():
+                            insertion_points.append(i)
+                
+                if insertion_points:
+                    step = max(1, len(insertion_points) // (len(unplaced_images) + 1))
+                    for idx, img_data in enumerate(unplaced_images):
+                        insert_idx = min((idx + 1) * step, len(insertion_points) - 1)
+                        pos = insertion_points[insert_idx]
+                        lines.insert(pos, '\n' + img_data['markdown'] + '\n')
+            
+            content = '\n'.join(lines)
         
-        # Insert all images at the determined point
-        if image_refs:
-            images_section = '\n\n' + '\n\n'.join(image_refs) + '\n\n'
-            lines.insert(insertion_point, images_section)
-        
-        updated_article.content = '\n'.join(lines)
+        updated_article.content = content
         return updated_article
     
     def _determine_output_path(self, output_option: Optional[str], article: Article) -> str:
