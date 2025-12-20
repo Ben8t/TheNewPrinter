@@ -1,10 +1,15 @@
-# 📰 The New Printer
+# The New Printer
 
-Transform web articles into beautifully formatted PDFs with classic magazine styling.
+![](./misc/header.jpg)
 
-A lightweight CLI tool with optional web interface that converts web articles into print-ready PDFs using pandoc's robust document conversion pipeline - bringing the classic magazine aesthetic to digital content.
+Reading on paper just feels better. It's slow. It's embedded in the physical. It allows raw notes.
+As a huge reader of blogs and newsletters mainly distributed on the Internet, I created New Printer to simply transform blog posts into printable PDFs.
 
-## ✨ Features
+I am now printing the blog posts I really want to read on paper and putting them in a nice binder.
+
+New Printer comes as a lightweight CLI tool with optional web interface that converts web articles into print-ready PDFs using pandoc's robust document conversion pipeline - bringing the classic magazine aesthetic to digital content.
+
+## Features
 
 - **Simple & Fast**: Minimal dependencies, maximum performance
 - **Beautiful Output**: Professional typography with LaTeX backend
@@ -15,7 +20,7 @@ A lightweight CLI tool with optional web interface that converts web articles in
 - **Web Interface**: Optional FastAPI server for browser-based conversion
 - **Batch Processing**: Convert multiple articles at once
 
-## 🚀 Quick Start
+## Quick Start
 
 ### One-time Use (No Installation)
 
@@ -241,7 +246,7 @@ pdf_path = runner.convert_to_pdf(article, {
 })
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -251,11 +256,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Pandoc](https://pandoc.org/) for excellent document conversion
 - [Trafilatura](https://trafilatura.readthedocs.io/) for reliable content extraction
@@ -270,4 +275,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**The New Printer** - Because sometimes the best way to read online is offline. 📰✨ 
+**The New Printer** - Because sometimes the best way to read online is offline. 
