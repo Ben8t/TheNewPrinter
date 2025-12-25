@@ -478,4 +478,35 @@ class TemporaryDirectory:
         """Cleanup temporary directory."""
         if self.cleanup and self.temp_dir and self.temp_dir.exists():
             import shutil
-            shutil.rmtree(self.temp_dir, ignore_errors=True) 
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+
+def cleanup_temp_images(temp_images_dir: Optional[str] = None) -> int:
+    """
+    Clean up temporary images directory.
+    
+    Args:
+        temp_images_dir: Path to temp images directory. If None, uses config default.
+        
+    Returns:
+        Number of files removed
+    """
+    import shutil
+    from .config import get_config
+    
+    if temp_images_dir is None:
+        config = get_config()
+        temp_images_dir = config.get('default.temp_images_dir', './tmp_images')
+    
+    images_dir = Path(temp_images_dir).expanduser().resolve()
+    
+    if not images_dir.exists():
+        return 0
+    
+    # Count files before removal
+    file_count = len(list(images_dir.glob('*')))
+    
+    # Remove the directory and all its contents
+    shutil.rmtree(images_dir, ignore_errors=True)
+    
+    return file_count 

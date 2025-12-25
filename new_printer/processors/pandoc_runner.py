@@ -299,8 +299,11 @@ class PandocRunner:
         if not article.images:
             return []
         
-        # Use local tmp_images directory instead of temp directory
-        images_dir = Path.cwd() / 'tmp_images'
+        # Use configured temp images directory
+        from ..config import get_config
+        config = get_config()
+        temp_images_path = config.get('default.temp_images_dir', './tmp_images')
+        images_dir = Path(temp_images_path).expanduser().resolve()
         images_dir.mkdir(exist_ok=True)
         
         # Use image processor to download and optimize images
@@ -357,7 +360,12 @@ class PandocRunner:
         url_to_local = {}
         for img_info in valid_images:
             local_filename = Path(img_info.local_path).name
-            local_path = f"tmp_images/{local_filename}"
+            # Get relative path from config
+            from ..config import get_config
+            config = get_config()
+            temp_images_path = config.get('default.temp_images_dir', './tmp_images')
+            images_dir_name = Path(temp_images_path).name
+            local_path = f"{images_dir_name}/{local_filename}"
             url_to_local[img_info.url] = local_path
         
         # Replace remote image URLs with local paths in the content
@@ -389,7 +397,12 @@ class PandocRunner:
             image_placements = []
             for img_info in valid_images:
                 local_filename = Path(img_info.local_path).name
-                local_path = f"tmp_images/{local_filename}"
+                # Get relative path from config
+                from ..config import get_config
+                config = get_config()
+                temp_images_path = config.get('default.temp_images_dir', './tmp_images')
+                images_dir_name = Path(temp_images_path).name
+                local_path = f"{images_dir_name}/{local_filename}"
                 alt_text = img_info.alt_text or "Article image"
                 image_md = f"![{alt_text}]({local_path})"
                 
@@ -573,7 +586,10 @@ class PandocRunner:
                 args.extend(['--lua-filter', str(columns_filter)])
         
         # Resource path - tell Pandoc where to find images in the current working directory
-        images_dir = Path.cwd() / 'tmp_images'
+        from ..config import get_config
+        config = get_config()
+        temp_images_path = config.get('default.temp_images_dir', './tmp_images')
+        images_dir = Path(temp_images_path).expanduser().resolve()
         if images_dir.exists() and list(images_dir.glob('*')):
             # Use resource-path to help Pandoc find images in current directory
             args.extend(['--resource-path', str(Path.cwd())])

@@ -25,10 +25,10 @@ New Printer is a lightweight CLI tool that converts web articles into print-read
 
 ```bash
 # Convert a single article
-uvx new-printer https://example.com/article
+uvx new-printer convert https://example.com/article
 
 # With custom options
-uvx new-printer https://example.com/article \
+uvx new-printer convert https://example.com/article \
   --columns 2 \
   --font-size 11pt \
   --template magazine \
@@ -92,26 +92,26 @@ sudo apt-get install pandoc texlive-latex-recommended texlive-latex-extra
 
 ```bash
 # Convert article with defaults (2 columns, 11pt font)
-new-printer https://longform.aeon.co/essays/future-of-work
+new-printer convert https://longform.aeon.co/essays/future-of-work
 
 # Specify output file
-new-printer https://example.com/article --output my-article.pdf
+new-printer convert https://example.com/article --output my-article.pdf
 ```
 
 #### Formatting Options
 
 ```bash
 # Single column layout
-new-printer https://example.com/article --columns 1
+new-printer convert https://example.com/article --columns 1
 
 # Magazine style with 3 columns
-new-printer https://example.com/article \
+new-printer convert https://example.com/article \
   --columns 3 \
   --template magazine \
   --font-size 10pt
 
 # Academic paper format
-new-printer https://example.com/article \
+new-printer convert https://example.com/article \
   --template academic \
   --font-size 12pt \
   --columns 1

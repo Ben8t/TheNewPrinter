@@ -45,4 +45,7 @@ Repository = "https://github.com/yourusername/new-printer.git"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["new_printer*"]
-exclude = ["tests*", "prd*", "tasks*"] 
+exclude = ["tests*", "prd*", "tasks*"]
+
+[tool.setuptools.package-data]
+new_printer = ["templates/*.latex", "templates/*.lua", "templates/*.yaml"] 

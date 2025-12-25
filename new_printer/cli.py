@@ -20,6 +20,7 @@ from .extractors.extractor_factory import ExtractorFactory
 from .processors.pandoc_runner import PandocRunner
 from .config import get_config
 from .models import ConversionOptions, ExtractionResult
+from .utils import cleanup_temp_images
 
 console = Console()
 
@@ -185,6 +186,13 @@ def convert_cmd(ctx, url: str, output_file: Optional[str], columns: Optional[int
     
     if article.images and include_images:
         console.print(f"[blue]Images:[/blue] {len(article.images)} included")
+    
+    # Cleanup temp images if configured
+    if config.get('default.cleanup_temp_images', False):
+        try:
+            cleanup_temp_images()
+        except Exception:
+            pass  # Ignore cleanup errors
 
 
 @main.command("batch")
@@ -323,6 +331,26 @@ def batch_cmd(ctx, urls_file, output_dir: str, columns: Optional[int],
             
             if len(failed_urls) > 10:
                 console.print(f"[yellow]... and {len(failed_urls) - 10} more errors[/yellow]")
+
+
+@main.command("cleanup")
+@click.option("--temp-dir", 
+              help="Path to temp images directory (uses config default if not specified)")
+@click.pass_context
+def cleanup_cmd(ctx, temp_dir: Optional[str]):
+    """Clean up temporary image files."""
+    
+    try:
+        file_count = cleanup_temp_images(temp_dir)
+        
+        if file_count > 0:
+            console.print(f"[green]✅ Cleaned up {file_count} temporary image file(s)[/green]")
+        else:
+            console.print("[blue]No temporary files to clean up[/blue]")
+            
+    except Exception as e:
+        console.print(f"[red]Error during cleanup:[/red] {e}")
+        sys.exit(1)
 
 
 @main.command("info")

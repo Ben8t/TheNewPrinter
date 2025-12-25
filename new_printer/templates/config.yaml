@@ -10,6 +10,8 @@ default:
   output_dir: "~/Downloads" # Default output directory
   include_images: true # Whether to include images in PDFs
   timeout: 120 # Timeout for PDF generation (seconds)
+  temp_images_dir: "./tmp_images" # Directory for temporary image files
+  cleanup_temp_images: false # Auto-cleanup temp images after conversion
 
 # Template configurations
 templates:

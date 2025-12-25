@@ -37,7 +37,9 @@ class Config:
                 "template": "article",
                 "output_dir": "~/Downloads",
                 "include_images": True,
-                "timeout": 120
+                "timeout": 120,
+                "temp_images_dir": "./tmp_images",
+                "cleanup_temp_images": False
             },
             "templates": {
                 "article": {
