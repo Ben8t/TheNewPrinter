@@ -7,7 +7,7 @@ As a huge reader of blogs and newsletters mainly distributed on the Internet, I 
 
 I am now printing the blog posts I really want to read on paper and putting them in a nice binder.
 
-New Printer comes as a lightweight CLI tool with optional web interface that converts web articles into print-ready PDFs using pandoc's robust document conversion pipeline - bringing the classic magazine aesthetic to digital content.
+New Printer is a lightweight CLI tool that converts web articles into print-ready PDFs using pandoc's robust document conversion pipeline - bringing the classic magazine aesthetic to digital content.
 
 ## Features
 
@@ -17,7 +17,6 @@ New Printer comes as a lightweight CLI tool with optional web interface that con
 - **Multiple Templates**: Article, academic, and magazine styles
 - **Smart Extraction**: Trafilatura with readability fallback
 - **Image Processing**: Automatic optimization for print
-- **Web Interface**: Optional FastAPI server for browser-based conversion
 - **Batch Processing**: Convert multiple articles at once
 
 ## Quick Start
@@ -126,16 +125,7 @@ echo "https://site1.com/article1" > urls.txt
 echo "https://site2.com/article2" >> urls.txt
 
 # Convert all articles
-new-printer --batch urls.txt --output-dir ./articles
-```
-
-#### Web Interface
-
-```bash
-# Start web server
-new-printer serve --port 3000
-
-# Then open http://localhost:3000 in your browser
+new-printer batch urls.txt --output-dir ./articles
 ```
 
 ### Available Templates
@@ -179,7 +169,6 @@ Web Article → Content Extraction → Markdown → Pandoc → LaTeX → PDF
 - **Processors**: Markdown conversion, image optimization
 - **Templates**: Custom LaTeX templates with multi-column support
 - **CLI**: Click-based interface with rich output
-- **Web UI**: Optional FastAPI server
 
 ## 🔧 Development
 

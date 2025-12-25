@@ -42,9 +42,3 @@ pandoc:
   pdf_engine: "xelatex" # PDF engine (xelatex, pdflatex, lualatex)
   standalone: true # Generate standalone document
   extract_media: true # Extract and process images
-
-# Web interface settings (optional)
-web:
-  host: "0.0.0.0" # Host to bind web server
-  port: 3000 # Default port for web interface
-  debug: false # Enable debug mode

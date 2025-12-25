@@ -3,7 +3,7 @@
 CLI interface for New Printer - Transform web articles into print-ready PDFs.
 
 This module provides the main command-line interface using Click framework,
-supporting single article conversion, batch processing, and web server mode.
+supporting single article conversion and batch processing.
 """
 
 import sys
@@ -325,53 +325,6 @@ def batch_cmd(ctx, urls_file, output_dir: str, columns: Optional[int],
                 console.print(f"[yellow]... and {len(failed_urls) - 10} more errors[/yellow]")
 
 
-@main.command("serve")
-@click.option("-p", "--port", type=int, default=3000, show_default=True,
-              help="Port to run the web server on")
-@click.option("--host", default="127.0.0.1", show_default=True,
-              help="Host to bind the web server to")
-@click.option("--reload", is_flag=True,
-              help="Enable auto-reload for development")
-@click.option("-v", "--verbose", is_flag=True,
-              help="Enable verbose output")
-@click.pass_context
-def serve_cmd(ctx, port: int, host: str, reload: bool, verbose: bool):
-    """Start the optional web interface."""
-    
-    try:
-        import uvicorn
-        from .web_ui.server import create_app
-    except ImportError as e:
-        console.print(f"[red]Web UI dependencies not available:[/red] {e}")
-        console.print("[yellow]Install web dependencies with:[/yellow] pip install 'new-printer[web]'")
-        sys.exit(1)
-    
-    config = ctx.obj['config']
-    
-    console.print(f"[blue]Starting web server on[/blue] http://{host}:{port}")
-    console.print("[blue]Press Ctrl+C to stop[/blue]")
-    
-    # Create the FastAPI app with configuration
-    app = create_app(config)
-    
-    # Configure logging level
-    log_level = "debug" if verbose else "info"
-    
-    try:
-        uvicorn.run(
-            app,
-            host=host,
-            port=port,
-            log_level=log_level,
-            reload=reload
-        )
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Server stopped by user[/yellow]")
-    except Exception as e:
-        console.print(f"[red]Server error:[/red] {e}")
-        sys.exit(1)
-
-
 @main.command("info")
 @click.option("--check-deps", is_flag=True,
               help="Check system dependencies")
@@ -415,8 +368,6 @@ def info_cmd(ctx, check_deps: bool, templates: bool):
             ('trafilatura', 'Content extraction'),
             ('readability', 'Fallback extraction'),
             ('PIL', 'Image processing'),
-            ('fastapi', 'Web interface'),
-            ('uvicorn', 'Web server')
         ]
         
         console.print("\n[blue]Optional dependencies:[/blue]")
@@ -469,7 +420,6 @@ def info_cmd(ctx, check_deps: bool, templates: bool):
         console.print("\n[blue]Usage examples:[/blue]")
         console.print("  new-printer convert https://example.com/article")
         console.print("  new-printer batch urls.txt -d ./pdfs")
-        console.print("  new-printer serve --port 8080")
         console.print("  new-printer info --check-deps --templates")
 
 

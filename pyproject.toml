@@ -28,11 +28,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-web = [
-    "fastapi>=0.100.0",  # Slightly lower for better compatibility
-    "uvicorn>=0.20.0",   # Slightly lower for better compatibility
-    "python-multipart>=0.0.6",
-]
 dev = [
     "pytest>=7.0.0",
     "black>=22.0.0",     # Lower version for Python 3.8
