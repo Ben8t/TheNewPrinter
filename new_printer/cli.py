@@ -89,7 +89,7 @@ def main(ctx, config_file):
               type=click.Choice(['9pt', '10pt', '11pt', '12pt', '14pt']),
               help="Font size for the document")
 @click.option("-t", "--template", 
-              type=click.Choice(['article', 'magazine']),
+              type=click.Choice(['article', 'magazine', 'newyorker']),
               help="LaTeX template to use")
 @click.option("--no-images", "include_images", is_flag=True, flag_value=False, 
               default=True, help="Exclude images from PDF")
@@ -203,7 +203,7 @@ def convert_cmd(ctx, url: str, output_file: Optional[str],
               type=click.Choice(['9pt', '10pt', '11pt', '12pt', '14pt']),
               help="Font size for documents")
 @click.option("-t", "--template",
-              type=click.Choice(['article', 'magazine']),
+              type=click.Choice(['article', 'magazine', 'newyorker']),
               help="LaTeX template to use")
 @click.option("--no-images", "include_images", is_flag=True, flag_value=False,
               default=True, help="Exclude images from PDFs")
@@ -418,7 +418,8 @@ def info_cmd(ctx, check_deps: bool, templates: bool):
                 for template_name, template_path in available_templates.items():
                     description = {
                         'article': 'Clean article layout with professional typography',
-                        'magazine': 'New Yorker-style magazine layout'
+                        'magazine': 'New Yorker-style magazine layout',
+                        'newyorker': 'The New Yorker inspired elegant editorial layout'
                     }.get(template_name, 'Custom template')
                     
                     table.add_row(template_name, description, str(template_path))

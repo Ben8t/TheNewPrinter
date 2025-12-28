@@ -30,6 +30,11 @@ templates:
     margins: "1.5cm"
     fontfamily: "times"
 
+  newyorker:
+    description: "The New Yorker inspired elegant editorial layout"
+    margins: "2.5cm"
+    fontfamily: "cormorant"
+
 # Content extraction settings
 extractors:
   primary: "trafilatura" # Primary extractor (trafilatura)

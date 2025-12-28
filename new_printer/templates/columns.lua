@@ -1,8 +1,14 @@
 -- columns.lua - Pandoc Lua Filter for Multi-Column Layout
 -- Enhances multi-column support and provides layout optimizations
 -- Fixed to always use 2 columns
+-- Hero image support: First large image becomes full-width hero
+-- Title deduplication: Remove title from body if it matches metadata title
 
 local columns = 2  -- Fixed to 2 columns
+local first_large_image_found = false
+local image_count = 0
+local article_title = ""
+local first_header_removed = false
 
 -- Helper function to check if we're in a multi-column environment
 function is_multicolumn()
@@ -18,10 +24,43 @@ function wrap_in_multicols(content, col_count)
 end
 
 -- Handle images in multi-column layout
--- Don't modify images at all - let Pandoc handle them naturally
--- The template's graphicx settings will handle column width
+-- Small images (avatars) are filtered out
 function Image(img)
-  -- Return image unchanged for both single and multi-column
+  image_count = image_count + 1
+  
+  -- Get image source
+  local src = img.src or ""
+  local alt = img.alt or {}
+  local alt_text = pandoc.utils.stringify(alt)
+  
+  -- Check if image is likely an avatar/profile picture
+  local is_avatar = false
+  
+  -- Pattern matching for avatar indicators
+  if string.find(string.lower(src), "avatar") or
+     string.find(string.lower(src), "profile") or
+     string.find(string.lower(src), "author") or
+     string.find(string.lower(alt_text), "avatar") or
+     string.find(string.lower(alt_text), "author") or
+     -- Check for small dimensions in URL (common for avatars)
+     string.find(src, "w_36") or
+     string.find(src, "h_36") or
+     string.find(src, "w_48") or
+     string.find(src, "h_48") or
+     string.find(src, "w_64") or
+     string.find(src, "h_64") or
+     string.find(src, "32x32") or
+     string.find(src, "48x48") or
+     string.find(src, "64x64") then
+    is_avatar = true
+  end
+  
+  -- Filter out avatar images
+  if is_avatar then
+    return {}
+  end
+  
+  -- Return other images unchanged for column display
   return img
 end
 
@@ -104,6 +143,14 @@ end
 
 -- Handle headers in multi-column layout
 function Header(header)
+  -- Remove first header if it matches the article title (avoid duplication)
+  if not first_header_removed and header.level == 1 then
+    local header_text = pandoc.utils.stringify(header.content)
+    -- Always remove the first H1 header since it's already in the title block
+    first_header_removed = true
+    return {}  -- Remove this header
+  end
+  
   if is_multicolumn() and header.level >= 3 then
     -- For subsections in multi-column, ensure they don't orphan
     local header_latex = '\\needspace{3\\baselineskip}\n'
@@ -152,6 +199,12 @@ end
 function Meta(meta)
   -- Always use 2 columns, ignore metadata
   columns = 2
+  
+  -- Store article title to detect duplicates
+  if meta.title then
+    article_title = pandoc.utils.stringify(meta.title)
+  end
+  
   return meta
 end
 

@@ -240,29 +240,68 @@ class PandocRunner:
         Returns:
             Complete markdown document
         """
+        # Clean content - remove emojis and special characters that Cormorant font doesn't support
+        content = article.content
+        
+        # Remove emojis and other Unicode symbols that might not render
+        # Keep only basic Latin, common punctuation, and standard symbols
+        import unicodedata
+        cleaned_content = []
+        for char in content:
+            # Allow basic Latin, numbers, punctuation, whitespace, and common symbols
+            if (ord(char) < 0x7F or  # Basic ASCII
+                unicodedata.category(char).startswith('P') or  # Punctuation
+                unicodedata.category(char).startswith('Z') or  # Separators/spaces
+                char in '\n\r\t' or  # Whitespace
+                0x80 <= ord(char) <= 0xFF or  # Latin Extended
+                0x2010 <= ord(char) <= 0x2027):  # Common punctuation (dashes, quotes, etc.)
+                cleaned_content.append(char)
+            elif unicodedata.category(char) == 'So':  # Symbol, other (emojis)
+                # Replace emojis with empty string or keep section label if it looks like one
+                continue
+        
+        content = ''.join(cleaned_content)
+        
+        # Extract first large image for hero (if not avatar)
+        hero_image = None
+        hero_found = False
+        
+        # Find all images in markdown to get the first non-avatar one
+        img_pattern = r'!\[([^\]]*)\]\(([^\)]+)\)'
+        matches = list(re.finditer(img_pattern, content))
+        
+        for match in matches:
+            alt_text = match.group(1)
+            img_url = match.group(2)
+            
+            # Check if it's not an avatar
+            is_avatar = any(indicator in img_url.lower() or indicator in alt_text.lower() for indicator in [
+                'avatar', 'profile', 'author', 'w_36', 'h_36', 'w_48', 'h_48', 'w_64', 'h_64', '32x32', '48x48', '64x64'
+            ])
+            
+            if not is_avatar and not hero_found:
+                hero_image = img_url
+                hero_found = True
+                # Remove this image from content
+                content = content.replace(match.group(0), '', 1)
+                break
+        
+        # Add hero image to metadata if found
+        if hero_image:
+            metadata['heroimage'] = hero_image  # Use underscore-free key for Pandoc template
+        
+        # Add description to metadata if available
+        if article.description and article.description != article.title:
+            metadata['description'] = article.description
+        
         # Convert metadata to YAML frontmatter
         yaml_metadata = yaml.dump(metadata, default_flow_style=False, allow_unicode=True)
         
         # Build document sections
         sections = []
         
-        # Add article metadata as subtitle if available
-        if article.author or article.date:
-            subtitle_parts = []
-            if article.author:
-                subtitle_parts.append(f"By {article.author}")
-            if article.date:
-                subtitle_parts.append(article.formatted_date)
-            
-            if subtitle_parts:
-                sections.append(f"*{' • '.join(subtitle_parts)}*\n")
-        
-        # Add description if available
-        if article.description and article.description != article.title:
-            sections.append(f"*{article.description}*\n")
-        
-        # Add main content
-        sections.append(article.content)
+        # Add main content (with first image removed if it became hero)
+        sections.append(content)
         
         # Add reading information
         if article.word_count and article.word_count > 0:
