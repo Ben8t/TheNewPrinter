@@ -4,7 +4,6 @@
 
 # Default options for document conversion
 default:
-  columns: 2 # Number of columns (1-3)
   font_size: "11pt" # Font size (10pt, 11pt, 12pt, etc.)
   template: "article" # Default template (article, magazine, academic)
   output_dir: "~/Downloads" # Default output directory
@@ -28,7 +27,6 @@ templates:
 
   magazine:
     description: "Magazine-style layout"
-    columns: 3
     margins: "1.5cm"
     fontfamily: "times"
 

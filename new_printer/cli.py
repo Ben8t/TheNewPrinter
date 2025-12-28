@@ -85,8 +85,6 @@ def main(ctx, config_file):
 @click.option("-o", "--output", "output_file", 
               callback=validate_output_path,
               help="Output PDF filename (auto-generated if not specified)")
-@click.option("-c", "--columns", type=click.IntRange(1, 3), 
-              help="Number of columns (1-3)")
 @click.option("-s", "--font-size", "font_size", 
               type=click.Choice(['9pt', '10pt', '11pt', '12pt', '14pt']),
               help="Font size for the document")
@@ -105,7 +103,7 @@ def main(ctx, config_file):
 @click.option("-v", "--verbose", is_flag=True, 
               help="Enable verbose output")
 @click.pass_context
-def convert_cmd(ctx, url: str, output_file: Optional[str], columns: Optional[int], 
+def convert_cmd(ctx, url: str, output_file: Optional[str], 
                 font_size: Optional[str], template: Optional[str], 
                 include_images: bool, margins: Optional[str], 
                 font_family: Optional[str], timeout: Optional[int], verbose: bool):
@@ -116,7 +114,7 @@ def convert_cmd(ctx, url: str, output_file: Optional[str], columns: Optional[int
     # Build conversion options from CLI args and config defaults
     options = ConversionOptions(
         output=output_file,
-        columns=columns or config.get('default.columns', 2),
+        columns=2,  # Always use 2 columns
         font_size=font_size or config.get('default.font_size', '11pt'),
         template=template or config.get('default.template', 'article'),
         include_images=include_images,
@@ -201,8 +199,6 @@ def convert_cmd(ctx, url: str, output_file: Optional[str], columns: Optional[int
               type=click.Path(file_okay=False, writable=True),
               default="./pdfs", show_default=True,
               help="Directory to save PDF files")
-@click.option("-c", "--columns", type=click.IntRange(1, 3),
-              help="Number of columns (1-3)")
 @click.option("-s", "--font-size", "font_size",
               type=click.Choice(['9pt', '10pt', '11pt', '12pt', '14pt']),
               help="Font size for documents")
@@ -216,7 +212,7 @@ def convert_cmd(ctx, url: str, output_file: Optional[str], columns: Optional[int
 @click.option("-v", "--verbose", is_flag=True,
               help="Enable verbose output")
 @click.pass_context
-def batch_cmd(ctx, urls_file, output_dir: str, columns: Optional[int],
+def batch_cmd(ctx, urls_file, output_dir: str,
               font_size: Optional[str], template: Optional[str],
               include_images: bool, continue_on_error: bool, verbose: bool):
     """Process multiple URLs from a file."""
@@ -250,7 +246,7 @@ def batch_cmd(ctx, urls_file, output_dir: str, columns: Optional[int],
     
     # Build base options
     base_options = ConversionOptions(
-        columns=columns or config.get('default.columns', 2),
+        columns=2,  # Always use 2 columns
         font_size=font_size or config.get('default.font_size', '11pt'),
         template=template or config.get('default.template', 'article'),
         include_images=include_images,
@@ -440,7 +436,7 @@ def info_cmd(ctx, check_deps: bool, templates: bool):
         console.print("Transform web articles into print-ready PDFs\n")
         
         console.print("[blue]Configuration:[/blue]")
-        console.print(f"  Default columns: {config.get('default.columns', 2)}")
+        console.print(f"  Columns: 2 (fixed)")
         console.print(f"  Default font size: {config.get('default.font_size', '11pt')}")
         console.print(f"  Default template: {config.get('default.template', 'article')}")
         console.print(f"  Include images: {config.get('default.include_images', True)}")

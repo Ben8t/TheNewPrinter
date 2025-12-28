@@ -1,12 +1,12 @@
 -- columns.lua - Pandoc Lua Filter for Multi-Column Layout
 -- Enhances multi-column support and provides layout optimizations
+-- Fixed to always use 2 columns
 
-local columns = 2  -- Default column count
-local in_multicol = false
+local columns = 2  -- Fixed to 2 columns
 
 -- Helper function to check if we're in a multi-column environment
 function is_multicolumn()
-  return columns > 1
+  return true  -- Always true since we always use 2 columns
 end
 
 -- Function to wrap content in multicol environment
@@ -148,11 +148,10 @@ function handle_page_break(elem)
   return elem
 end
 
--- Read metadata to get column count
+-- Read metadata (columns is now fixed to 2, but keep for compatibility)
 function Meta(meta)
-  if meta.columns then
-    columns = tonumber(pandoc.utils.stringify(meta.columns)) or 2
-  end
+  -- Always use 2 columns, ignore metadata
+  columns = 2
   return meta
 end
 

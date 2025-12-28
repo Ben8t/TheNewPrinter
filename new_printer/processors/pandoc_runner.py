@@ -198,8 +198,8 @@ class PandocRunner:
         }
         
         # Only add columns variable if > 1 (for LaTeX template conditional)
-        if options.columns > 1:
-            metadata['columns'] = options.columns
+        # Always 2 columns now
+        metadata['columns'] = 2
         
         # Add template-specific settings
         if template_config:
@@ -214,12 +214,11 @@ class PandocRunner:
             '\\usepackage{geometry}',
         ]
         
-        # Multi-column specific settings
-        if options.columns > 1:
-            header_includes.extend([
-                f'\\setlength{{\\columnsep}}{{1cm}}',
-                f'\\setlength{{\\columnseprule}}{{0pt}}',
-            ])
+        # Multi-column specific settings (always 2 columns)
+        header_includes.extend([
+            f'\\setlength{{\\columnsep}}{{1cm}}',
+            f'\\setlength{{\\columnseprule}}{{0pt}}',
+        ])
         
         metadata['header-includes'] = header_includes
         
@@ -579,11 +578,10 @@ class PandocRunner:
         # Add filters if available
         filters_dir = self.templates_dir
         
-        # Column filter for multi-column support
-        if options.columns > 1:
-            columns_filter = filters_dir / 'columns.lua'
-            if columns_filter.exists():
-                args.extend(['--lua-filter', str(columns_filter)])
+        # Column filter for multi-column support (always use it)
+        columns_filter = filters_dir / 'columns.lua'
+        if columns_filter.exists():
+            args.extend(['--lua-filter', str(columns_filter)])
         
         # Resource path - tell Pandoc where to find images in the current working directory
         from ..config import get_config
@@ -708,9 +706,9 @@ class PandocRunner:
         if options.pdf_engine not in self.supported_engines:
             issues.append(f"Unsupported PDF engine: {options.pdf_engine}")
         
-        # Validate columns
-        if not 1 <= options.columns <= 3:
-            issues.append("Columns must be between 1 and 3")
+        # Validate columns (always 2 now)
+        if options.columns != 2:
+            issues.append("Columns must be 2 (fixed value)")
         
         # Validate font size
         if not options.font_size.endswith('pt'):

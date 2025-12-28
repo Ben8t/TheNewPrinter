@@ -131,10 +131,8 @@ $if(date)$
 $endif$
 
 % Multi-column settings
-$if(columns)$
 \setlength{\columnsep}{1cm}
 \setlength{\columnseprule}{0pt}
-$endif$
 
 % Additional header includes
 $for(header-includes)$
@@ -146,14 +144,11 @@ $endfor$
 % Title page
 $if(title)$
 \maketitle
-$if(columns)$
-% Add some space before starting columns if multi-column
+% Add some space before starting columns
 \vspace{0.5cm}
 $endif$
-$endif$
 
-% Begin multi-column layout if specified
-$if(columns)$
+% Begin multi-column layout (always 2 columns)
 % Disable figure floating in multicols by redefining figure environment
 % This allows images to work properly in multi-column layouts
 \makeatletter
@@ -169,8 +164,7 @@ $if(columns)$
   \par\medskip
 }
 \makeatother
-\begin{multicols}{$columns$}
-$endif$
+\begin{multicols}{2}
 
 % Abstract or description
 $if(abstract)$
@@ -193,9 +187,7 @@ $endif$
 % Main content
 $body$
 
-% End multi-column layout if specified
-$if(columns)$
+% End multi-column layout
 \end{multicols}
-$endif$
 
 \end{document} 

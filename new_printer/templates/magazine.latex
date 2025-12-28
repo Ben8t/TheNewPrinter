@@ -190,12 +190,8 @@ $endif$
 \vspace{1em}
 $endif$
 
-% Begin multi-column layout - default to 3 columns for magazine
-$if(columns)$
-\begin{multicols}{$columns$}
-$else$
-\begin{multicols}{3}
-$endif$
+% Begin multi-column layout - always 2 columns
+\begin{multicols}{2}
 
 % Drop cap for first paragraph (if content starts with text)
 % This would need to be handled in post-processing or content preparation
@@ -222,10 +218,6 @@ $endif$
 $body$
 
 % End multi-column layout
-$if(columns)$
 \end{multicols}
-$else$
-\end{multicols}
-$endif$
 
 \end{document} 

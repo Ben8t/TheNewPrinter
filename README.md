@@ -13,8 +13,8 @@ New Printer is a lightweight CLI tool that converts web articles into print-read
 
 - **Simple & Fast**: Minimal dependencies, maximum performance
 - **Beautiful Output**: Professional typography with LaTeX backend
-- **Flexible Layouts**: Single, double, or triple column formats
-- **Multiple Templates**: Article, academic, and magazine styles
+- **Two-Column Format**: Classic magazine-style layout
+- **Multiple Templates**: Article and magazine styles
 - **Smart Extraction**: Trafilatura with readability fallback
 - **Image Processing**: Automatic optimization for print
 - **Batch Processing**: Convert multiple articles at once
@@ -29,7 +29,6 @@ uvx new-printer convert https://example.com/article
 
 # With custom options
 uvx new-printer convert https://example.com/article \
-  --columns 2 \
   --font-size 11pt \
   --template magazine \
   --output article.pdf
@@ -101,20 +100,15 @@ new-printer convert https://example.com/article --output my-article.pdf
 #### Formatting Options
 
 ```bash
-# Single column layout
-new-printer convert https://example.com/article --columns 1
-
-# Magazine style with 3 columns
+# Magazine style
 new-printer convert https://example.com/article \
-  --columns 3 \
   --template magazine \
   --font-size 10pt
 
-# Academic paper format
+# Custom font size
 new-printer convert https://example.com/article \
-  --template academic \
-  --font-size 12pt \
-  --columns 1
+  --template article \
+  --font-size 12pt
 ```
 
 #### Batch Processing
@@ -132,7 +126,8 @@ new-printer batch urls.txt --output-dir ./articles
 
 - **article**: Clean, readable layout (default)
 - **magazine**: New Yorker-style multi-column format
-- **academic**: Academic paper styling with larger margins
+
+All templates use a 2-column layout for optimal readability.
 
 ### Configuration
 
@@ -149,7 +144,6 @@ editor ~/.new-printer.yml
 Example configuration:
 ```yaml
 default:
-  columns: 2
   font_size: "11pt"
   template: "magazine"
   output_dir: "~/Documents/Articles"
@@ -229,7 +223,6 @@ from new_printer.processors.pandoc_runner import PandocRunner
 
 runner = PandocRunner()
 pdf_path = runner.convert_to_pdf(article, {
-    "columns": 2,
     "template": "magazine",
     "output": "article.pdf"
 })
