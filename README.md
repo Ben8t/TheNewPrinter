@@ -170,8 +170,8 @@ Web Article → Content Extraction → Markdown → Pandoc → LaTeX → PDF
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/new-printer.git
-cd new-printer
+git clone https://github.com/Ben8t/TheNewPrinter.git
+cd TheNewPrinter
 
 # Install development dependencies
 pip install -r requirements.txt
@@ -251,9 +251,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [Documentation](https://github.com/yourusername/new-printer/wiki)
-- [Issue Tracker](https://github.com/yourusername/new-printer/issues)
-- [Changelog](https://github.com/yourusername/new-printer/releases)
+- [Documentation](https://github.com/Ben8t/TheNewPrinter/wiki)
+- [Issue Tracker](https://github.com/Ben8t/TheNewPrinter/issues)
+- [Changelog](https://github.com/Ben8t/TheNewPrinter/releases)
 
 ---
 
