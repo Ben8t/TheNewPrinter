@@ -1,0 +1,243 @@
+@import "tailwindcss";
+
+/* ── Screen-only styles ─────────────────────────────────────────────────────
+   Wrapped in @media screen so they never compete with @media print rules.
+   This avoids cascade-order bugs when the bundler reorders stylesheets.
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes homeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+.animate-home-in {
+  opacity: 0;
+  animation: homeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+@media screen {
+  /* Pages wrapper */
+  .pages-wrapper {
+    background: #e8e8e8;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    min-height: 100vh;
+    font-family: var(--font-lora), Georgia, serif;
+  }
+
+  /* Each A4 page card */
+  .print-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm 12mm 20mm;
+    background: white;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+    position: relative;
+  }
+}
+
+/* ── Shared styles (screen + print) ─────────────────────────────────────── */
+
+.ctrl-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: var(--font-inter), sans-serif;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.ctrl-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ctrl-btn--active {
+  background: #111;
+  color: white;
+  border-color: #111;
+}
+
+.ctrl-btn--active:hover {
+  background: #333 !important;
+  border-color: #333 !important;
+}
+
+.layout-loading {
+  color: #999;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+.article-header {
+  margin-bottom: 4mm;
+  border-bottom: 1px solid #000;
+  padding-bottom: 3mm;
+}
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  font-family: var(--font-inter), sans-serif;
+  color: #555;
+  margin-bottom: 2mm;
+}
+
+.article-title {
+  font-size: 28px;
+  line-height: 1.15;
+  margin: 4px 0;
+  font-weight: 700;
+  font-family: var(--font-lora), Georgia, serif;
+}
+
+.byline {
+  font-size: 12px;
+  font-style: italic;
+  margin: 2px 0;
+  color: #444;
+}
+
+.excerpt {
+  font-size: 13px;
+  font-style: italic;
+  margin: 4px 0;
+  color: #555;
+}
+
+.article-lead-image {
+  margin: 3mm 0;
+}
+
+.article-lead-image img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Column layout */
+.article-columns {
+  display: flex;
+  gap: 5mm;
+  align-items: flex-start;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Blocks */
+.block {
+  margin-bottom: 4px;
+}
+
+.block-paragraph .text-line {
+  font-size: 12px;
+  font-family: var(--font-lora), Georgia, serif;
+}
+
+.block-heading .text-line {
+  font-family: var(--font-lora), Georgia, serif;
+  font-weight: 700;
+}
+
+.block-heading.level-1 .text-line { font-size: 22px; }
+.block-heading.level-2 .text-line { font-size: 16px; }
+.block-heading.level-3 .text-line,
+.block-heading.level-4 .text-line { font-size: 13px; }
+
+.block-blockquote {
+  border-left: 2px solid #333;
+  padding-left: 3mm;
+}
+
+.block-blockquote .text-line {
+  font-style: italic;
+  font-size: 12px;
+  font-family: var(--font-lora), Georgia, serif;
+}
+
+.block-list .text-line {
+  font-size: 12px;
+  font-family: var(--font-lora), Georgia, serif;
+}
+
+.block-image {
+  position: relative;
+}
+
+.block-image img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 2mm 0;
+  object-fit: cover;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 4px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%);
+}
+
+.img-remove-btn {
+  font-size: 11px;
+  font-family: var(--font-inter), sans-serif;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.img-remove-btn:hover {
+  background: rgba(180, 0, 0, 0.85);
+}
+
+/* Column break handle */
+.col-break-handle {
+  display: block;
+  opacity: 0;
+  transition: opacity 0.15s;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+  border: 1px dashed #ccc;
+  padding: 2px 0;
+  margin: 2px 0;
+  background: none;
+}
+
+.block:hover > .col-break-handle,
+.block-image:hover > .col-break-handle {
+  opacity: 1;
+}
