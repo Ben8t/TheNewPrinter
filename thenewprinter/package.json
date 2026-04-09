@@ -15,14 +15,15 @@
   "dependencies": {
     "@chenglou/pretext": "^0.0.5",
     "@mozilla/readability": "^0.6.0",
+    "@types/sanitize-html": "^2.16.1",
     "clsx": "^2.1.1",
     "commander": "^14.0.3",
-    "isomorphic-dompurify": "^3.8.0",
     "linkedom": "^0.18.12",
     "next": "16.2.3",
     "playwright": "^1.59.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sanitize-html": "^2.17.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,6 +1,6 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 import { validateUrl, resolveRelativeUrls, extractOgImage } from './utils';
 import type { ExtractedArticle, ExtractResult } from './types';
 
@@ -47,13 +47,16 @@ export async function extractArticle(rawUrl: string): Promise<ExtractResult> {
       return { ok: false, error: 'Could not parse article content', code: 'PARSE_FAILED' };
     }
 
-    const sanitized = DOMPurify.sanitize(article.content ?? '', {
-      ALLOWED_TAGS: [
+    const sanitized = sanitizeHtml(article.content ?? '', {
+      allowedTags: [
         'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li',
         'h1', 'h2', 'h3', 'h4', 'blockquote', 'img', 'figure', 'figcaption',
         'div', 'span',
       ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height'],
+      allowedAttributes: {
+        'a': ['href', 'title'],
+        'img': ['src', 'alt', 'title', 'width', 'height'],
+      },
     });
 
     const resolvedContent = resolveRelativeUrls(sanitized, url.href);
