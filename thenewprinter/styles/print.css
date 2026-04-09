@@ -1,0 +1,163 @@
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 20mm 12mm;
+  }
+
+  /* Hide interactive controls and screen chrome */
+  .print-hidden,
+  .col-break-handle,
+  button {
+    display: none !important;
+  }
+
+  /* Reset page wrapper to plain flow */
+  .pages-wrapper {
+    background: none;
+    padding: 0;
+    gap: 0;
+    display: block;
+  }
+
+  /* Each page maps to one printed sheet.
+     @page already sets 12mm left/right margins → printable width = 186mm,
+     which equals the screen content width (210mm − 12mm − 12mm).
+     So padding:0 + width:100% gives the same column widths pretext measured. */
+  .print-page {
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-page:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Article header */
+  .article-header {
+    margin-bottom: 4mm;
+    border-bottom: 1pt solid #000;
+    padding-bottom: 3mm;
+  }
+
+  /* Column grid */
+  .article-columns {
+    display: flex;
+    gap: 5mm;
+    align-items: flex-start;
+  }
+
+  .cols-2 .column,
+  .cols-3 .column {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .column {
+    overflow: hidden;
+  }
+
+  /* Text lines — pretext computed, browser must NOT re-wrap */
+  .text-line {
+    white-space: pre;
+    overflow: visible;
+  }
+
+  /* Typography */
+  body {
+    font-family: var(--font-lora), Georgia, serif;
+  }
+
+  .block-paragraph .text-line {
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+
+  .block-heading.level-1 .text-line {
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  .block-heading.level-2 .text-line {
+    font-size: 12pt;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .block-heading.level-3 .text-line,
+  .block-heading.level-4 .text-line {
+    font-size: 10pt;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .block-blockquote .text-line {
+    font-style: italic;
+    border-left: 2pt solid #333;
+    padding-left: 2mm;
+  }
+
+  .block-list .text-line {
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+
+  /* Lead image */
+  .article-lead-image {
+    margin: 3mm 0;
+  }
+
+  .article-lead-image img {
+    width: 100%;
+    max-height: 60mm;
+    object-fit: cover;
+  }
+
+  /* Body images */
+  .block-image img {
+    width: 100%;
+    max-width: 100%;
+    max-height: 50mm;
+    height: auto;
+    object-fit: cover;
+    display: block;
+    margin: 2mm 0;
+  }
+
+  /* Masthead */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  .article-title {
+    font-size: 20pt;
+    line-height: 1.15;
+    margin: 2mm 0;
+  }
+
+  .byline {
+    font-size: 8pt;
+    font-style: italic;
+  }
+
+  .excerpt {
+    font-size: 9pt;
+    font-style: italic;
+    margin: 1mm 0;
+  }
+
+  /* Links */
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+}

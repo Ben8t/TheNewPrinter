@@ -1,0 +1,40 @@
+{
+  "name": "thenewprinter",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "cli": "tsx bin/cli.ts"
+  },
+  "bin": {
+    "thenewprinter": "bin/cli.ts"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.5",
+    "@mozilla/readability": "^0.6.0",
+    "@types/sanitize-html": "^2.16.1",
+    "clsx": "^2.1.1",
+    "commander": "^14.0.3",
+    "linkedom": "^0.18.12",
+    "next": "16.2.3",
+    "playwright": "^1.59.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sanitize-html": "^2.17.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/mozilla__readability": "^0.4.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
