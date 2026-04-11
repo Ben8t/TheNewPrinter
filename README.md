@@ -1,6 +1,6 @@
 # The New Printer
 
-Reading on paper just feels better. It's slow. It's embedded in the physical. It allows raw notes.
+Reading on paper just feels better. It's slow. It's embedded in the physical. It invites raw notes.
 
 The New Printer is a web app that turns any article URL into a clean, print-ready layout — no account, no install, no PDF export. Just open, paste, and print from your browser.
 
