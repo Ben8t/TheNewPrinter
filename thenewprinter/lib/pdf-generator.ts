@@ -9,6 +9,105 @@ import fontkit from '@pdf-lib/fontkit';
 import type { ExtractedArticle, PageContent, RenderedBlock, TemplateId } from './types';
 import { LIST_ITEM_GAP_PX, LIST_BLOCK_PADDING_PX } from './layout-engine';
 
+// ─── WOFF1 → TTF conversion ──────────────────────────────────────────────────
+// @pdf-lib/fontkit's tinyInflate can mishandle WOFF1 table decompression,
+// producing corrupt glyph maps. Convert to raw TTF first to be safe.
+
+async function decompressZlib(raw: Uint8Array, origLen: number): Promise<Uint8Array> {
+  if (typeof DecompressionStream !== 'undefined') {
+    // Browser: DecompressionStream with 'deflate' handles zlib-wrapped deflate
+    const ds     = new DecompressionStream('deflate');
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+    writer.write(raw);
+    writer.close();
+    const chunks: Uint8Array[] = [];
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
+    }
+    const out = new Uint8Array(origLen);
+    let pos = 0;
+    for (const c of chunks) { out.set(c, pos); pos += c.length; }
+    return out;
+  } else {
+    // Node.js
+    const { inflateSync } = await import('zlib');
+    return new Uint8Array(inflateSync(raw));
+  }
+}
+
+async function woffToTtf(buf: ArrayBuffer): Promise<ArrayBuffer> {
+  const view = new DataView(buf);
+  // 'wOFF' magic = 0x774F4646
+  if (view.getUint32(0) !== 0x774F4646) return buf; // not WOFF1 — pass through
+
+  const flavor    = view.getUint32(4);
+  const numTables = view.getUint16(12);
+
+  interface WoffEntry { tag: number; offset: number; compLen: number; origLen: number; checksum: number }
+  const entries: WoffEntry[] = [];
+  for (let i = 0; i < numTables; i++) {
+    const b = 44 + i * 20;
+    entries.push({
+      tag:      view.getUint32(b),
+      offset:   view.getUint32(b + 4),
+      compLen:  view.getUint32(b + 8),
+      origLen:  view.getUint32(b + 12),
+      checksum: view.getUint32(b + 16),
+    });
+  }
+
+  // Decompress all tables
+  const tables: Uint8Array[] = await Promise.all(entries.map((e) => {
+    const raw = new Uint8Array(buf, e.offset, e.compLen);
+    if (e.compLen === e.origLen) return Promise.resolve(raw.slice()); // uncompressed
+    return decompressZlib(raw, e.origLen);
+  }));
+
+  // Compute sfnt header values
+  let entrySelector = 0, maxPow2 = 1;
+  while (maxPow2 * 2 <= numTables) { maxPow2 *= 2; entrySelector++; }
+  const searchRange = maxPow2 * 16;
+  const rangeShift  = numTables * 16 - searchRange;
+
+  // Compute table offsets (4-byte aligned after the sfnt header)
+  const headerSize = 12 + numTables * 16;
+  const tableOffsets: number[] = [];
+  let cursor = headerSize;
+  for (const t of tables) {
+    cursor = (cursor + 3) & ~3;
+    tableOffsets.push(cursor);
+    cursor += t.byteLength;
+  }
+  cursor = (cursor + 3) & ~3;
+
+  const ttf = new Uint8Array(cursor);
+  const out  = new DataView(ttf.buffer);
+
+  // sfnt header
+  out.setUint32(0,  flavor);
+  out.setUint16(4,  numTables);
+  out.setUint16(6,  searchRange);
+  out.setUint16(8,  entrySelector);
+  out.setUint16(10, rangeShift);
+
+  // table records
+  for (let i = 0; i < numTables; i++) {
+    const b = 12 + i * 16;
+    out.setUint32(b,      entries[i].tag);
+    out.setUint32(b + 4,  entries[i].checksum);
+    out.setUint32(b + 8,  tableOffsets[i]);
+    out.setUint32(b + 12, entries[i].origLen);
+  }
+
+  // table data
+  for (let i = 0; i < tables.length; i++) ttf.set(tables[i], tableOffsets[i]);
+
+  return ttf.buffer;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const MM_TO_PT = 2.8346;
@@ -316,15 +415,24 @@ export async function buildPdf(
   fontBuffers: FontBuffers,
   fetchImage: ImageFetcher,
 ): Promise<Uint8Array> {
+  // Convert WOFF1 → TTF before embedding; fontkit's tinyInflate can mishandle
+  // WOFF table decompression and produce corrupt glyph maps in the subset.
+  const [regBuf, boldBuf, italicBuf] = await Promise.all([
+    woffToTtf(fontBuffers.regular),
+    woffToTtf(fontBuffers.bold),
+    woffToTtf(fontBuffers.italic),
+  ]);
+
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const regular = await doc.embedFont(fontBuffers.regular);
-  const bold    = await doc.embedFont(fontBuffers.bold);
-  const italic  = await doc.embedFont(fontBuffers.italic);
+  const regular = await doc.embedFont(regBuf);
+  const bold    = await doc.embedFont(boldBuf);
+  const italic  = await doc.embedFont(italicBuf);
 
   // Disable OpenType ligature substitution (liga, clig) on all three fonts.
   // Without this, fontkit's GSUB maps "fi" → ligature glyph whose CID collides
-  // with other characters in the subset, causing visual corruption ("fi" → "y").
+  // with other characters in the subset, causing visual corruption.
+  // NOTE: spread order matters — liga/clig must come LAST to win over any caller features.
   for (const pdfFont of [regular, bold, italic]) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fkFont = (pdfFont as any).embedder?.font;
@@ -332,7 +440,7 @@ export async function buildPdf(
       const orig = fkFont.layout.bind(fkFont);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fkFont.layout = (text: string, features?: Record<string, unknown>, ...rest: any[]) =>
-        orig(text, { liga: false, clig: false, ...features }, ...rest);
+        orig(text, { ...features, liga: false, clig: false }, ...rest);
     }
   }
 
@@ -371,9 +479,9 @@ export async function generateAndDownloadPdf(
   template: TemplateId,
 ): Promise<void> {
   const [regularBuf, boldBuf, italicBuf] = await Promise.all([
-    fetch('/fonts/lora-regular.woff').then((r) => r.arrayBuffer()),
-    fetch('/fonts/lora-bold.woff').then((r)   => r.arrayBuffer()),
-    fetch('/fonts/lora-italic.woff').then((r) => r.arrayBuffer()),
+    fetch('/fonts/lora-regular.ttf').then((r) => r.arrayBuffer()),
+    fetch('/fonts/lora-bold.ttf').then((r)    => r.arrayBuffer()),
+    fetch('/fonts/lora-italic.ttf').then((r)  => r.arrayBuffer()),
   ]);
 
   const browserFetchImage: ImageFetcher = async (url) => {
