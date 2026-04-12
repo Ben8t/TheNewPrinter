@@ -1,6 +1,11 @@
 import { prepareWithSegments, layoutNextLine, type LayoutCursor } from '@chenglou/pretext';
 import type { Block, ColumnContent, RenderedBlock, PageContent } from './types';
 
+// Spacing constants (must match CSS and pdf-generator)
+export const LIST_ITEM_GAP_PX    = 6;  // gap between list items
+export const LIST_BLOCK_PADDING_PX = 6;  // top + bottom padding of a list block
+const BLOCKQUOTE_INDENT_PX = 11; // 3mm at 96dpi — subtracted from wrap width
+
 const FONTS = {
   body: '9pt/1.45 Lora, Georgia, serif',
   h1: 'bold 20pt/1.15 Lora, Georgia, serif',
@@ -111,15 +116,32 @@ export function layoutBlocks(blocks: Block[], opts: LayoutOptions): PageContent[
     if (block.type === 'list') {
       const font = FONTS.body;
       const lineHeight = parseLineHeightPx(font);
-      const lines = block.items.map((item, idx) =>
-        `${block.ordered ? `${idx + 1}.` : '•'} ${item}`
-      );
-      const totalHeight = lines.length * lineHeight;
-      if (usedHeight + totalHeight > currentColHeight()) {
+      const lines: string[] = [];
+      let textHeight = LIST_BLOCK_PADDING_PX * 2; // top + bottom padding
+
+      for (let j = 0; j < block.items.length; j++) {
+        const prefix = block.ordered ? `${j + 1}. ` : '• ';
+        const prepared = prepareWithSegments(prefix + block.items[j], font);
+        let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 };
+        while (true) {
+          const line = layoutNextLine(prepared, cursor, opts.columnWidthPx);
+          if (!line) break;
+          lines.push(line.text);
+          textHeight += lineHeight;
+          cursor = line.end;
+        }
+        // Empty string separator between items (rendered as a small gap)
+        if (j < block.items.length - 1) {
+          lines.push('');
+          textHeight += LIST_ITEM_GAP_PX;
+        }
+      }
+
+      if (usedHeight + textHeight > currentColHeight()) {
         advanceColumn();
       }
-      currentColumns()[col].blocks.push({ blockIndex: i, block, lines, lineHeight, totalHeight });
-      usedHeight += totalHeight;
+      currentColumns()[col].blocks.push({ blockIndex: i, block, lines, lineHeight, totalHeight: textHeight });
+      usedHeight += textHeight;
       continue;
     }
 
@@ -141,12 +163,16 @@ export function layoutBlocks(blocks: Block[], opts: LayoutOptions): PageContent[
 
     if (!text) continue;
 
+    const wrapWidth = block.type === 'blockquote'
+      ? opts.columnWidthPx - BLOCKQUOTE_INDENT_PX
+      : opts.columnWidthPx;
+
     const prepared = prepareWithSegments(text, font);
     let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 };
     let colLines: string[] = [];
 
     while (true) {
-      const line = layoutNextLine(prepared, cursor, opts.columnWidthPx);
+      const line = layoutNextLine(prepared, cursor, wrapWidth);
       if (!line) break;
 
       if (usedHeight + lineHeight > currentColHeight()) {

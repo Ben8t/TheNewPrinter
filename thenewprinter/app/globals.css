@@ -76,6 +76,17 @@
   border-color: #333 !important;
 }
 
+.ctrl-btn--primary {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.ctrl-btn--primary:hover:not(:disabled) {
+  background: #333 !important;
+  border-color: #333 !important;
+}
+
 .layout-loading {
   color: #999;
   font-size: 13px;

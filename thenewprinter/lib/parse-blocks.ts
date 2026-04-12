@@ -118,7 +118,15 @@ function walkElement(el: Element, blocks: Block[]): void {
 }
 
 export function parseBlocks(html: string): Block[] {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  let doc: Document;
+  if (typeof DOMParser !== 'undefined') {
+    doc = new DOMParser().parseFromString(html, 'text/html');
+  } else {
+    // Node.js: use linkedom
+    const { parseHTML } = require('linkedom') as typeof import('linkedom');
+    doc = parseHTML(html).document as unknown as Document;
+  }
+
   const blocks: Block[] = [];
 
   for (const child of Array.from(doc.body.children)) {

@@ -99,8 +99,6 @@
 
   .block-blockquote .text-line {
     font-style: italic;
-    border-left: 2pt solid #333;
-    padding-left: 2mm;
   }
 
   .block-list .text-line {
@@ -160,4 +158,5 @@
     color: #000;
     text-decoration: none;
   }
+
 }

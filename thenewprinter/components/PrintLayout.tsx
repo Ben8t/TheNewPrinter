@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { parseBlocks } from '@/lib/parse-blocks';
 import { layoutBlocks } from '@/lib/layout-engine';
+import { generateAndDownloadPdf } from '@/lib/pdf-generator';
 import { Column } from './Column';
 import type { ExtractedArticle, Block, PageContent, TemplateId } from '@/lib/types';
 
@@ -27,6 +28,7 @@ export function PrintLayout({ article, template }: Props) {
   const [pages,              setPages]              = useState<PageContent[]>([]);
   const [colW,               setColW]               = useState<number | null>(null);
   const [aboveColH,          setAboveColH]          = useState<number>(120); // space above columns on page 1
+  const [pdfLoading,         setPdfLoading]         = useState(false);
 
   // Parse blocks once
   useEffect(() => {
@@ -70,6 +72,14 @@ export function PrintLayout({ article, template }: Props) {
     }
   });
 
+  // Expose computed layout to Playwright / CLI
+  useEffect(() => {
+    if (pages.length > 0 && typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>)['__LAYOUT_PAGES__']   = pages;
+      (window as unknown as Record<string, unknown>)['__LAYOUT_ARTICLE__'] = article;
+    }
+  }, [pages, article]);
+
   // Run pretext layout
   useEffect(() => {
     if (printing.current) return;
@@ -105,6 +115,15 @@ export function PrintLayout({ article, template }: Props) {
     setHiddenImageIndices((prev) => prev.includes(idx) ? prev : [...prev, idx]);
   const handleRestoreImages = () => setHiddenImageIndices([]);
 
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      await generateAndDownloadPdf(pages, article, template);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const renderColumns = (page: PageContent) =>
     page.columns.map((col) => (
       <Column
@@ -127,6 +146,13 @@ export function PrintLayout({ article, template }: Props) {
         )}
         <button className="ctrl-btn" onClick={handleUndoBreak} disabled={breakAfter.length === 0}>
           Undo break{breakAfter.length > 0 ? ` (${breakAfter.length})` : ''}
+        </button>
+        <button
+          className="ctrl-btn ctrl-btn--primary"
+          onClick={handleDownloadPdf}
+          disabled={pages.length === 0 || pdfLoading}
+        >
+          {pdfLoading ? 'Generating…' : 'Download PDF'}
         </button>
       </div>
 

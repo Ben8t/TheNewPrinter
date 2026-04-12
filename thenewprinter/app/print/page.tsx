@@ -1,6 +1,5 @@
 import { extractArticle } from '@/lib/extract';
 import { PrintLayout } from '@/components/PrintLayout';
-import { PrintButton } from '@/components/PrintButton';
 import Link from 'next/link';
 import type { TemplateId } from '@/lib/types';
 
@@ -40,7 +39,6 @@ export default async function PrintPage({ searchParams }: PageProps) {
         >
           {otherLabel}
         </Link>
-        <PrintButton />
       </div>
       <PrintLayout article={result.article} template={template} />
     </>
