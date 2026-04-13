@@ -1,17 +1,26 @@
 import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { NextRequest, NextResponse } from 'next/server';
 import { buildPdf } from '@/lib/pdf-generator';
 import type { PageContent, ExtractedArticle, TemplateId } from '@/lib/types';
 
-// Resolve fonts directory relative to this file (works in dev and after build)
+const FONT_FILE = 'LiberationSans-Regular.ttf';
+
+// Resolve fonts directory — cwd can be the repo root or the Next.js app root
+// depending on how npm run dev was invoked.
 function fontsDir(): string {
+  const candidates = [
+    join(process.cwd(), 'public', 'fonts'),
+    join(process.cwd(), 'thenewprinter', 'public', 'fonts'),
+  ];
+  // Also try relative to this file's location (works in some build outputs)
   try {
-    return join(dirname(fileURLToPath(import.meta.url)), '../../../../public/fonts');
-  } catch {
-    return join(process.cwd(), 'public/fonts');
-  }
+    candidates.unshift(join(dirname(fileURLToPath(import.meta.url)), '../../../../public/fonts'));
+  } catch { /* import.meta.url may not be a file: URL in Turbopack dev */ }
+
+  return candidates.find(d => existsSync(join(d, FONT_FILE))) ?? candidates[0];
 }
 
 export async function POST(req: NextRequest) {
