@@ -30,10 +30,29 @@ export function PrintLayout({ article, template }: Props) {
   const [aboveColH,          setAboveColH]          = useState<number>(120); // space above columns on page 1
   const [pdfLoading,         setPdfLoading]         = useState(false);
 
-  // Parse blocks once
+  // Parse blocks once; drop the lead image — it's already shown in the header.
+  // CDNs (e.g. Substack) serve the same image at different transform URLs, so we
+  // decode any URL-encoded inner URL and compare that canonical form.
   useEffect(() => {
-    setBlocks(parseBlocks(article.content));
-  }, [article.content]);
+    const parsed = parseBlocks(article.content);
+    if (!article.leadImageUrl) { setBlocks(parsed); return; }
+
+    const canonical = (url: string): string => {
+      try {
+        const { pathname } = new URL(url);
+        // CDN proxy pattern: last path segment is a URL-encoded upstream URL
+        const last = pathname.split('/').filter(Boolean).pop() ?? '';
+        if (/^https?%3A/i.test(last)) return decodeURIComponent(last);
+      } catch { /* ignore */ }
+      return url;
+    };
+
+    const leadCanonical = canonical(article.leadImageUrl);
+    const isLead = (src: string) =>
+      src === article.leadImageUrl || canonical(src) === leadCanonical;
+
+    setBlocks(parsed.filter(b => !(b.type === 'image' && isLead(b.src))));
+  }, [article.content, article.leadImageUrl]);
 
   // Freeze / thaw around print dialog
   useEffect(() => {
