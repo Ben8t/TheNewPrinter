@@ -19,7 +19,7 @@ async function decompressZlib(raw: Uint8Array, origLen: number): Promise<Uint8Ar
     const ds     = new DecompressionStream('deflate');
     const writer = ds.writable.getWriter();
     const reader = ds.readable.getReader();
-    writer.write(raw);
+    writer.write(raw as unknown as ArrayBuffer);
     writer.close();
     const chunks: Uint8Array[] = [];
     for (;;) {
@@ -425,9 +425,11 @@ export async function buildPdf(
 
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const regular = await doc.embedFont(regBuf);
-  const bold    = await doc.embedFont(boldBuf);
-  const italic  = await doc.embedFont(italicBuf);
+  // subset: false embeds the full font — avoids glyph outline corruption
+  // that occurs when fontkit's subsetting mishandles composite/variable glyphs.
+  const regular = await doc.embedFont(regBuf,    { subset: false });
+  const bold    = await doc.embedFont(boldBuf,   { subset: false });
+  const italic  = await doc.embedFont(italicBuf, { subset: false });
 
   // Disable OpenType ligature substitution (liga, clig) on all three fonts.
   // Without this, fontkit's GSUB maps "fi" → ligature glyph whose CID collides
@@ -471,33 +473,24 @@ export async function buildPdf(
   return doc.save();
 }
 
-// ─── Browser wrapper ──────────────────────────────────────────────────────────
+// ─── Browser wrapper (server-side generation via API) ────────────────────────
+// PDF generation runs in the Next.js API route (Node.js) to avoid browser-side
+// font embedding issues with pdf-lib. The browser only sends the layout data.
 
 export async function generateAndDownloadPdf(
   pages: PageContent[],
   article: ExtractedArticle,
   template: TemplateId,
 ): Promise<void> {
-  const [regularBuf, boldBuf, italicBuf] = await Promise.all([
-    fetch('/fonts/lora-regular.ttf').then((r) => r.arrayBuffer()),
-    fetch('/fonts/lora-bold.ttf').then((r)    => r.arrayBuffer()),
-    fetch('/fonts/lora-italic.ttf').then((r)  => r.arrayBuffer()),
-  ]);
+  const res = await fetch('/api/generate-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pages, article, template }),
+  });
 
-  const browserFetchImage: ImageFetcher = async (url) => {
-    try {
-      const res = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
-      return res.ok ? res.arrayBuffer() : null;
-    } catch { return null; }
-  };
+  if (!res.ok) throw new Error(`PDF generation failed: ${res.statusText}`);
 
-  const pdfBytes = await buildPdf(
-    pages, article, template,
-    { regular: regularBuf, bold: boldBuf, italic: italicBuf },
-    browserFetchImage,
-  );
-
-  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+  const blob = await res.blob();
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;

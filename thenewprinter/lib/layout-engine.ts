@@ -7,12 +7,12 @@ export const LIST_BLOCK_PADDING_PX = 6;  // top + bottom padding of a list block
 const BLOCKQUOTE_INDENT_PX = 11; // 3mm at 96dpi — subtracted from wrap width
 
 const FONTS = {
-  body: '9pt/1.45 Lora, Georgia, serif',
-  h1: 'bold 20pt/1.15 Lora, Georgia, serif',
-  h2: 'bold 12pt/1.3 Lora, Georgia, serif',
-  h3: 'bold 10pt/1.3 Lora, Georgia, serif',
-  h4: 'bold 9pt/1.3 Lora, Georgia, serif',
-  blockquote: 'italic 9pt/1.45 Lora, Georgia, serif',
+  body: '9pt/1.45 Arial, Helvetica, sans-serif',
+  h1: 'bold 20pt/1.15 Arial, Helvetica, sans-serif',
+  h2: 'bold 12pt/1.3 Arial, Helvetica, sans-serif',
+  h3: 'bold 10pt/1.3 Arial, Helvetica, sans-serif',
+  h4: 'bold 9pt/1.3 Arial, Helvetica, sans-serif',
+  blockquote: 'italic 9pt/1.45 Arial, Helvetica, sans-serif',
 } as const;
 
 function parseLineHeightPx(font: string): number {

@@ -70,7 +70,7 @@
 
   /* Typography */
   body {
-    font-family: var(--font-lora), Georgia, serif;
+    font-family: Arial, Helvetica, sans-serif;
   }
 
   .block-paragraph .text-line {
