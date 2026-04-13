@@ -116,9 +116,9 @@ program
     // ── Load fonts from filesystem ────────────────────────────────────────────
     const fontsDir = join(dirname(fileURLToPath(import.meta.url)), '../public/fonts');
     const [regularBuf, boldBuf, italicBuf] = await Promise.all([
-      readFile(join(fontsDir, 'lora-regular.ttf')).then(toArrayBuffer),
-      readFile(join(fontsDir, 'lora-bold.ttf')).then(toArrayBuffer),
-      readFile(join(fontsDir, 'lora-italic.ttf')).then(toArrayBuffer),
+      readFile(join(fontsDir, 'eb-garamond-regular.ttf')).then(toArrayBuffer),
+      readFile(join(fontsDir, 'eb-garamond-bold.ttf')).then(toArrayBuffer),
+      readFile(join(fontsDir, 'eb-garamond-italic.ttf')).then(toArrayBuffer),
     ]);
 
     // ── Image fetcher (Node.js — no CORS restrictions) ────────────────────────

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildPdf } from '@/lib/pdf-generator';
 import type { PageContent, ExtractedArticle, TemplateId } from '@/lib/types';
 
-const FONT_FILE = 'lora-regular.ttf';
+const FONT_FILE = 'eb-garamond-regular.ttf';
 
 // Resolve fonts directory — cwd can be the repo root or the Next.js app root
 // depending on how npm run dev was invoked.
@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
   let regular: ArrayBuffer, bold: ArrayBuffer, italic: ArrayBuffer;
   try {
     [regular, bold, italic] = await Promise.all([
-      readFile(join(dir, 'lora-regular.ttf')).then(b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
-      readFile(join(dir, 'lora-bold.ttf')).then(b    => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
-      readFile(join(dir, 'lora-italic.ttf')).then(b  => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+      readFile(join(dir, 'eb-garamond-regular.ttf')).then(b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+      readFile(join(dir, 'eb-garamond-bold.ttf')).then(b    => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+      readFile(join(dir, 'eb-garamond-italic.ttf')).then(b  => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
     ]);
   } catch (err) {
     console.error('[generate-pdf] font load failed from', dir, ':', err);
