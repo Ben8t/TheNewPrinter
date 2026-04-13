@@ -1,4 +1,5 @@
-'use client';
+// Works in both Node.js (API route) and browser (generateAndDownloadPdf).
+// Do NOT add 'use client' — this file is imported by the server-side API route.
 
 import {
   PDFDocument, PDFFont, PDFPage, rgb,

@@ -27,11 +27,17 @@ export async function POST(req: NextRequest) {
 
   // Load Liberation Sans font files from filesystem (server-side only)
   const dir = fontsDir();
-  const [regular, bold, italic] = await Promise.all([
-    readFile(join(dir, 'LiberationSans-Regular.ttf')).then(b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
-    readFile(join(dir, 'LiberationSans-Bold.ttf')).then(b    => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
-    readFile(join(dir, 'LiberationSans-Italic.ttf')).then(b  => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
-  ]);
+  let regular: ArrayBuffer, bold: ArrayBuffer, italic: ArrayBuffer;
+  try {
+    [regular, bold, italic] = await Promise.all([
+      readFile(join(dir, 'LiberationSans-Regular.ttf')).then(b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+      readFile(join(dir, 'LiberationSans-Bold.ttf')).then(b    => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+      readFile(join(dir, 'LiberationSans-Italic.ttf')).then(b  => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer),
+    ]);
+  } catch (err) {
+    console.error('[generate-pdf] font load failed from', dir, ':', err);
+    return NextResponse.json({ error: `Font load failed: ${err}` }, { status: 500 });
+  }
 
   // Proxy images server-side (no CORS restrictions)
   const fetchImage = async (url: string): Promise<ArrayBuffer | null> => {
@@ -41,7 +47,13 @@ export async function POST(req: NextRequest) {
     } catch { return null; }
   };
 
-  const pdfBytes = await buildPdf(pages, article, template, { regular, bold, italic }, fetchImage);
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await buildPdf(pages, article, template, { regular, bold, italic }, fetchImage);
+  } catch (err) {
+    console.error('[generate-pdf] buildPdf failed:', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
   const slug = article.title
     .replace(/[^a-z0-9]+/gi, '-')
