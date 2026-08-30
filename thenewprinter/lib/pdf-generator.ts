@@ -2,13 +2,16 @@
 // Do NOT add 'use client' — this file is imported by the server-side API route.
 
 import {
-  PDFDocument, PDFFont, PDFPage, rgb,
+  PDFDocument, PDFFont, PDFPage, StandardFonts, rgb,
   pushGraphicsState, popGraphicsState,
   moveTo, lineTo, closePath, clip, endPath,
 } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import type { ExtractedArticle, PageContent, RenderedBlock, TemplateId } from './types';
-import { LIST_ITEM_GAP_PX, LIST_BLOCK_PADDING_PX } from './layout-engine';
+import {
+  LIST_ITEM_GAP_PX, LIST_BLOCK_PADDING_PX,
+  CODE_BLOCK_PADDING_PX, CODE_INDENT_PX,
+} from './layout-engine';
 
 // ─── WOFF1 → TTF conversion ──────────────────────────────────────────────────
 // @pdf-lib/fontkit's tinyInflate can mishandle WOFF1 table decompression,
@@ -134,6 +137,7 @@ const FONT_SIZES = {
   h3:        10,
   h4:         9,
   blockquote: 9,
+  code:     7.5,
   byline:     8,
   excerpt:    9,
   title:     20,
@@ -147,6 +151,7 @@ const LINE_HEIGHTS_PT = {
   h3:        10  * 1.3,
   h4:         9  * 1.3,
   blockquote: 9  * 1.45,
+  code:     7.5  * 1.35,
   byline:     8  * 1.4,
   excerpt:    9  * 1.45,
   title:     20  * 1.15,
@@ -155,6 +160,8 @@ const LINE_HEIGHTS_PT = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ImageFetcher = (url: string) => Promise<ArrayBuffer | null>;
+
+interface PdfFonts { regular: PDFFont; bold: PDFFont; italic: PDFFont; mono: PDFFont }
 
 export interface FontBuffers {
   regular: ArrayBuffer;
@@ -223,7 +230,7 @@ async function drawHeader(
   doc: PDFDocument,
   page: PDFPage,
   article: ExtractedArticle,
-  fonts: { regular: PDFFont; bold: PDFFont; italic: PDFFont },
+  fonts: PdfFonts,
   fetchImage: ImageFetcher,
 ): Promise<number> {
   let cursorFromTop = MARGIN_TOP;
@@ -336,7 +343,7 @@ async function drawHeader(
 
 // ─── Block drawing ────────────────────────────────────────────────────────────
 
-function blockFontAndSize(rb: RenderedBlock, fonts: { regular: PDFFont; bold: PDFFont; italic: PDFFont }) {
+function blockFontAndSize(rb: RenderedBlock, fonts: PdfFonts) {
   const { block } = rb;
   if (block.type === 'heading') {
     const size = FONT_SIZES[`h${block.level}` as keyof typeof FONT_SIZES] ?? 9;
@@ -345,6 +352,9 @@ function blockFontAndSize(rb: RenderedBlock, fonts: { regular: PDFFont; bold: PD
   }
   if (block.type === 'blockquote') {
     return { font: fonts.italic, size: FONT_SIZES.blockquote, lineHeightPt: LINE_HEIGHTS_PT.blockquote };
+  }
+  if (block.type === 'code') {
+    return { font: fonts.mono, size: FONT_SIZES.code, lineHeightPt: LINE_HEIGHTS_PT.code };
   }
   return { font: fonts.regular, size: FONT_SIZES.body, lineHeightPt: LINE_HEIGHTS_PT.body };
 }
@@ -357,7 +367,7 @@ async function drawBlock(
   colW: number,
   colTopY: number,
   offsetFromTop: number,
-  fonts: { regular: PDFFont; bold: PDFFont; italic: PDFFont },
+  fonts: PdfFonts,
   fetchImage: ImageFetcher,
 ): Promise<number> {
   const { block } = rb;
@@ -377,10 +387,26 @@ async function drawBlock(
   }
 
   const { font, size, lineHeightPt } = blockFontAndSize(rb, fonts);
-  const listItemGapPt  = LIST_ITEM_GAP_PX    * PX_TO_PT;
+  const listItemGapPt  = LIST_ITEM_GAP_PX      * PX_TO_PT;
   const listBlockPadPt = LIST_BLOCK_PADDING_PX * PX_TO_PT;
+  const codeBlockPadPt = CODE_BLOCK_PADDING_PX * PX_TO_PT;
+  const codeIndentPt   = CODE_INDENT_PX        * PX_TO_PT;
 
   if (block.type === 'list') offsetFromTop += listBlockPadPt;
+
+  if (block.type === 'code') {
+    // Tinted panel with a left rule, mirroring .block-code in globals.css.
+    const totalPt = rb.lines.length * lineHeightPt + codeBlockPadPt * 2;
+    page.drawRectangle({
+      x: colX, y: colTopY - offsetFromTop - totalPt,
+      width: colW, height: totalPt, color: rgb(0.949, 0.949, 0.949),
+    });
+    page.drawRectangle({
+      x: colX, y: colTopY - offsetFromTop - totalPt,
+      width: 1.5, height: totalPt, color: rgb(0.6, 0.6, 0.6),
+    });
+    offsetFromTop += codeBlockPadPt;
+  }
 
   if (block.type === 'blockquote') {
     const totalPt = rb.lines.filter(l => l !== '').length * lineHeightPt;
@@ -390,10 +416,16 @@ async function drawBlock(
     });
   }
 
-  const textX = block.type === 'blockquote' ? colX + 4 : colX;
+  const textX =
+    block.type === 'blockquote' ? colX + 4 :
+    block.type === 'code'       ? colX + codeIndentPt :
+    colX;
 
   for (const line of rb.lines) {
-    if (line === '') { offsetFromTop += listItemGapPt; continue; }
+    // An empty line means the inter-item gap in a list, but a real blank line
+    // of code — which still occupies a full line box.
+    if (line === '' && block.type === 'list') { offsetFromTop += listItemGapPt; continue; }
+    if (line === '') { offsetFromTop += lineHeightPt; continue; }
     safeDrawText(page, line, {
       x: textX,
       y: colTopY - offsetFromTop - lineHeightPt * 0.8,
@@ -403,6 +435,7 @@ async function drawBlock(
   }
 
   if (block.type === 'list') offsetFromTop += listBlockPadPt;
+  if (block.type === 'code') offsetFromTop += codeBlockPadPt;
 
   return offsetFromTop;
 }
@@ -431,6 +464,9 @@ export async function buildPdf(
   const regular = await doc.embedFont(regBuf,    { subset: false });
   const bold    = await doc.embedFont(boldBuf,   { subset: false });
   const italic  = await doc.embedFont(italicBuf, { subset: false });
+  // Courier is a PDF standard font: no bytes to ship, and its 0.6em advance is
+  // exactly what the layout engine assumed when it wrapped the code lines.
+  const mono    = await doc.embedFont(StandardFonts.Courier);
 
   // Disable OpenType ligature substitution (liga, clig) on all three fonts.
   // Without this, fontkit's GSUB maps "fi" → ligature glyph whose CID collides
@@ -447,7 +483,7 @@ export async function buildPdf(
     }
   }
 
-  const fonts   = { regular, bold, italic };
+  const fonts   = { regular, bold, italic, mono };
 
   const colCount = template === 'three-column' ? 3 : 2;
   const cols     = colPositions(colCount);

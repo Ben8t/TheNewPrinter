@@ -6,6 +6,17 @@ export const LIST_ITEM_GAP_PX    = 6;  // gap between list items
 export const LIST_BLOCK_PADDING_PX = 6;  // top + bottom padding of a list block
 const BLOCKQUOTE_INDENT_PX = 11; // 3mm at 96dpi — subtracted from wrap width
 
+export const CODE_BLOCK_PADDING_PX = 5;  // top + bottom padding of a code block
+export const CODE_INDENT_PX        = 10; // left rule + gutter before the first glyph
+/**
+ * Advance width of one glyph as a fraction of the font size. Courier — the PDF
+ * standard font we draw code with — and Courier New, the first face in the CSS
+ * stack, are both exactly 0.6, so code wraps identically on screen and in the
+ * PDF without having to measure text. Any narrower fallback only leaves a wider
+ * right gutter, never an overflow.
+ */
+const MONO_ADVANCE_RATIO = 0.6;
+
 const FONTS = {
   body: '9pt/1.45 EB Garamond, Georgia, serif',
   h1: 'bold 20pt/1.15 EB Garamond, Georgia, serif',
@@ -13,6 +24,7 @@ const FONTS = {
   h3: 'bold 10pt/1.3 EB Garamond, Georgia, serif',
   h4: 'bold 9pt/1.3 EB Garamond, Georgia, serif',
   blockquote: 'italic 9pt/1.45 EB Garamond, Georgia, serif',
+  code: '7.5pt/1.35 Courier New, Courier, monospace',
 } as const;
 
 function parseLineHeightPx(font: string): number {
@@ -22,6 +34,53 @@ function parseLineHeightPx(font: string): number {
   const multiplier = parseFloat(match[2]);
   // 1pt ≈ 1.333px at 96dpi
   return ptSize * 1.333 * multiplier;
+}
+
+function parseFontSizePx(font: string): number {
+  const match = font.match(/(\d+(?:\.\d+)?)pt/);
+  return match ? parseFloat(match[1]) * 1.333 : 12;
+}
+
+/**
+ * Hard-wrap code to the column width. Prefers to break just after a separator so
+ * a split lands between tokens rather than inside one, and hangs the remainder
+ * at the original line's indentation so the shape of the code survives.
+ */
+function wrapCodeLines(lines: string[], colWidthPx: number): string[] {
+  const charWidthPx = parseFontSizePx(FONTS.code) * MONO_ADVANCE_RATIO;
+  const maxChars = Math.max(12, Math.floor((colWidthPx - CODE_INDENT_PX) / charWidthPx));
+
+  const wrapped: string[] = [];
+  for (const line of lines) {
+    if (line.length <= maxChars) {
+      wrapped.push(line);
+      continue;
+    }
+
+    const hang = line.match(/^ */)![0] + '  ';
+    let rest = line;
+    let prefix = '';
+
+    for (;;) {
+      const budget = maxChars - prefix.length;
+      if (rest.length <= budget) break;
+
+      // A space is cut before, every other separator after it — so look for the
+      // latter one character earlier to keep the cut inside the budget.
+      const separator = Math.max(
+        rest.slice(0, budget + 1).lastIndexOf(' '),
+        ...[',', '(', '[', '{', '.', '='].map((c) => rest.slice(0, budget).lastIndexOf(c) + 1)
+      );
+      // Only honour a separator far enough right to be worth the ragged edge;
+      // otherwise break mid-token, flush with the column edge.
+      const cut = separator > budget * 0.6 ? separator : budget;
+      wrapped.push(prefix + rest.slice(0, cut).trimEnd());
+      rest = rest.slice(cut).replace(/^ +/, '');
+      prefix = hang.length < maxChars - 8 ? hang : '';
+    }
+    wrapped.push(prefix + rest);
+  }
+  return wrapped;
 }
 
 function estimateImageHeight(
@@ -110,6 +169,39 @@ export function layoutBlocks(blocks: Block[], opts: LayoutOptions): PageContent[
       };
       currentColumns()[col].blocks.push(rb);
       usedHeight += imgHeight;
+      continue;
+    }
+
+    // Code: monospace, pre-wrapped, splittable across columns like a paragraph.
+    if (block.type === 'code') {
+      const lineHeight = parseLineHeightPx(FONTS.code);
+      const padding    = CODE_BLOCK_PADDING_PX * 2;
+      const wrapped    = wrapCodeLines(block.lines, opts.columnWidthPx);
+
+      let colLines: string[] = [];
+      const flush = () => {
+        if (colLines.length === 0) return;
+        currentColumns()[col].blocks.push({
+          blockIndex: i,
+          block,
+          lines: colLines,
+          lineHeight,
+          totalHeight: colLines.length * lineHeight + padding,
+        });
+        colLines = [];
+      };
+
+      usedHeight += padding;
+      for (const line of wrapped) {
+        if (usedHeight + lineHeight > currentColHeight()) {
+          flush();
+          advanceColumn();
+          usedHeight += padding;
+        }
+        colLines.push(line);
+        usedHeight += lineHeight;
+      }
+      flush();
       continue;
     }
 
