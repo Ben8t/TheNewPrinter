@@ -51,7 +51,7 @@ export async function extractArticle(rawUrl: string): Promise<ExtractResult> {
       allowedTags: [
         'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li',
         'h1', 'h2', 'h3', 'h4', 'blockquote', 'img', 'figure', 'figcaption',
-        'div', 'span',
+        'div', 'span', 'pre', 'code',
       ],
       allowedAttributes: {
         'a': ['href', 'title'],

@@ -16,6 +16,40 @@ function normalizeText(el: Element): string {
   return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Text of a <pre>/<code>, keeping the line structure and indentation that
+ * normalizeText() would collapse. Leading/trailing blank lines are dropped and
+ * any indentation shared by every line is removed, so code reads well in a
+ * narrow print column.
+ */
+function codeLines(el: Element): string[] {
+  const lines = (el.textContent ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\t/g, '    ')
+    .split('\n')
+    .map((line) => line.replace(/\s+$/, ''));
+
+  while (lines.length && !lines[0]) lines.shift();
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+
+  const indents = lines.filter(Boolean).map((line) => line.match(/^ */)![0].length);
+  const common = indents.length ? Math.min(...indents) : 0;
+  return common ? lines.map((line) => line.slice(common)) : lines;
+}
+
+/**
+ * Syntax highlighters (Chroma, Pygments, Rouge) put line numbers in their own
+ * <pre> next to the code one, inside a two-cell table. Sanitizing drops the
+ * table but keeps both <pre>s, so the gutter would otherwise be parsed as a
+ * code block of its own — a column of bare, consecutive numbers.
+ */
+function isLineNumberGutter(lines: string[]): boolean {
+  if (lines.length < 2) return false;
+  const numbers = lines.map((line) => line.trim());
+  if (!numbers.every((n) => /^\d+$/.test(n))) return false;
+  return numbers.every((n, i) => i === 0 || Number(n) === Number(numbers[i - 1]) + 1);
+}
+
 function extractImage(img: Element): Block | null {
   const src = img.getAttribute('src') ?? '';
   if (!src || src.startsWith('data:')) return null;
@@ -54,6 +88,13 @@ function walkElement(el: Element, blocks: Block[]): void {
     // Also grab any text in the paragraph
     const text = normalizeText(el);
     if (text) blocks.push({ type: 'paragraph', text });
+    return;
+  }
+
+  // ── Code ──────────────────────────────────────────────────────────────────
+  if (tag === 'pre' || tag === 'code') {
+    const lines = codeLines(el);
+    if (lines.length && !isLineNumberGutter(lines)) blocks.push({ type: 'code', lines });
     return;
   }
 

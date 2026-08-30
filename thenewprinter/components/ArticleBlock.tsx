@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ColumnBreakHandle } from './ColumnBreakHandle';
-import { LIST_ITEM_GAP_PX, LIST_BLOCK_PADDING_PX } from '@/lib/layout-engine';
+import { LIST_ITEM_GAP_PX, LIST_BLOCK_PADDING_PX, CODE_BLOCK_PADDING_PX } from '@/lib/layout-engine';
 import type { RenderedBlock } from '@/lib/types';
 
 interface Props {
@@ -34,6 +34,24 @@ export function ArticleBlock({ rendered, onInsertBreakAfter, onRemoveImage }: Pr
             <ColumnBreakHandle onInsert={onInsertBreakAfter} />
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (block.type === 'code') {
+    return (
+      <div
+        className="block block-code"
+        style={{ paddingTop: CODE_BLOCK_PADDING_PX, paddingBottom: CODE_BLOCK_PADDING_PX }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {lines.map((line, i) => (
+          <div key={i} className="code-line" style={{ lineHeight: `${lineHeight}px`, whiteSpace: 'pre' }}>
+            {line || '\u00A0'}
+          </div>
+        ))}
+        {hovered && <ColumnBreakHandle onInsert={onInsertBreakAfter} />}
       </div>
     );
   }

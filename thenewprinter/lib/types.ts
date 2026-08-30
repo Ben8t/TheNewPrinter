@@ -16,6 +16,7 @@ export type Block =
   | { type: 'heading'; level: 1 | 2 | 3 | 4; text: string }
   | { type: 'image'; src: string; alt: string; naturalWidth?: number; naturalHeight?: number }
   | { type: 'blockquote'; text: string }
+  | { type: 'code'; lines: string[] }
   | { type: 'list'; ordered: boolean; items: string[] }
   | { type: 'column-break' };
 
